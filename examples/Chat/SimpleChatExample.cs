@@ -8,7 +8,7 @@ namespace Codezerg.OpenRouter.Examples.Chat;
 [Example("Simple Chat", "Basic chat completion example")]
 public class SimpleChatExample
 {
-    public static async Task RunAsync(OpenRouterConfig config)
+    public static async Task RunAsync(OpenRouterClientOptions config)
     {
         Console.WriteLine("\n=== Simple Chat Example ===\n");
 
@@ -16,7 +16,7 @@ public class SimpleChatExample
         using var client = new OpenRouterClient(config);
 
         // Create a simple chat request
-        var request = new ChatCompletionRequest
+        var request = new ChatRequest
         {
             Messages = new List<ChatMessage>
             {

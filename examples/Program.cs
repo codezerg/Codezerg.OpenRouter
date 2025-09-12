@@ -39,10 +39,10 @@ class Program
         Console.WriteLine("✓ API key found");
 
         // Create shared configuration
-        var config = new OpenRouterConfig
+        var config = new OpenRouterClientOptions
         {
             ApiKey = apiKey,
-            DefaultModel = ModelConstants.DeepSeek.DeepSeekChatV3Free,
+            DefaultModel = "deepseek/deepseek-chat-v3:free",
             UserAgent = "Codezerg.OpenRouter.Examples/1.0",
             Referer = "https://github.com/codezerg/Codezerg.OpenRouter"
         };
@@ -50,15 +50,15 @@ class Program
         await RunExamplesMenu(config);
     }
 
-    static async Task RunExamplesMenu(OpenRouterConfig config)
+    static async Task RunExamplesMenu(OpenRouterClientOptions config)
     {
-        var examples = new List<(string Name, string Description, Func<OpenRouterConfig, Task> Run)>
+        var examples = new List<(string Name, string Description, Func<OpenRouterClientOptions, Task> Run)>
         {
             //("Simple Chat", "Basic chat completion example", SimpleChatExample.RunAsync),
             //("Streaming Chat", "Chat with streaming response", StreamingChatExample.RunAsync),
             //("Multimodal Chat", "Chat with images", MultimodalChatExample.RunAsync),
             ("Image Analysis", "Analyze local or remote images", ImageAnalysisExample.RunAsync),
-            ("Image Generation", "Generate images using AI", ImageGenerationExample.RunAsync)
+            //("Image Generation", "Generate images using AI", ImageGenerationExample.RunAsync)
         };
 
         Console.WriteLine("\n========================================");

@@ -8,7 +8,7 @@ namespace Codezerg.OpenRouter.Examples.Chat;
 [Example("Streaming Chat", "Chat completion with streaming response")]
 public class StreamingChatExample
 {
-    public static async Task RunAsync(OpenRouterConfig config)
+    public static async Task RunAsync(OpenRouterClientOptions config)
     {
         Console.WriteLine("\n=== Streaming Chat Example ===\n");
 
@@ -16,7 +16,7 @@ public class StreamingChatExample
         using var client = new OpenRouterClient(config);
 
         // Create a chat request
-        var request = new ChatCompletionRequest
+        var request = new ChatRequest
         {
             Messages = new List<ChatMessage>
             {

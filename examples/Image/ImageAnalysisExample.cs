@@ -9,13 +9,13 @@ namespace Codezerg.OpenRouter.Examples.Image;
 [Example("Image Analysis", "Analyze local or remote images")]
 public class ImageAnalysisExample
 {
-    public static async Task RunAsync(OpenRouterConfig config)
+    public static async Task RunAsync(OpenRouterClientOptions config)
     {
         Console.WriteLine("\n=== Image Analysis Example ===\n");
 
         // Clone config and set vision-capable model for this example
         var visionConfig = config.Clone();
-        visionConfig.DefaultModel = ModelConstants.Google.Gemini20Flash;
+        visionConfig.DefaultModel = "openai/gpt-5-mini";
 
         // Create client with vision-capable model
         using var client = new OpenRouterClient(visionConfig);
@@ -29,11 +29,11 @@ public class ImageAnalysisExample
         Console.WriteLine($"\nQuestion: {question}");
 
         // Create a multimodal message
-        var message = new ChatMessage("user")
+        var message = new ChatMessage(ChatRole.User)
             .AddText(question)
             .AddImage(imageUrl);
 
-        var request = new ChatCompletionRequest
+        var request = new ChatRequest
         {
             Messages = new List<ChatMessage> { message },
             MaxTokens = 500
@@ -69,12 +69,9 @@ public class ImageAnalysisExample
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message}");
-            if (ex.Message.Contains("vision") || ex.Message.Contains("image"))
+            if (ex.Message.Contains("vision") || ex.Message.Contains("image") || ex.Message.Contains("404"))
             {
-                Console.WriteLine("\nNote: Make sure you're using a vision-capable model like:");
-                Console.WriteLine("  - google/gemini-2.0-flash-001");
-                Console.WriteLine("  - openai/gpt-4o");
-                Console.WriteLine("  - anthropic/claude-3.5-sonnet");
+                Console.WriteLine("\nNote: Make sure you're using a vision-capable model");
             }
         }
     }

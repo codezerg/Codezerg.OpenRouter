@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
@@ -8,13 +10,13 @@ namespace Codezerg.OpenRouter.Examples.Image;
 [Example("Image Generation", "Generate images using AI models")]
 public class ImageGenerationExample
 {
-    public static async Task RunAsync(OpenRouterConfig config)
+    public static async Task RunAsync(OpenRouterClientOptions config)
     {
         Console.WriteLine("\n=== Image Generation Example ===\n");
 
         // Clone config and set image generation model for this example
         var imageGenConfig = config.Clone();
-        imageGenConfig.DefaultModel = ModelConstants.Google.Gemini25FlashImagePreview; // OpenRouter's image generation model
+        imageGenConfig.DefaultModel = "google/gemini-2.5-flash-image-preview"; // OpenRouter's image generation model
 
         // Create client with image generation model
         using var client = new OpenRouterClient(imageGenConfig);
@@ -24,13 +26,13 @@ public class ImageGenerationExample
         Console.WriteLine($"Prompt: {prompt}");
 
         // Create an image generation request
-        var request = new ChatCompletionRequest
+        var request = new ChatRequest
         {
             Messages = new List<ChatMessage>
             {
                 ChatMessage.User(prompt)
             },
-            Modalities = new List<string> { "text", "image" } // Request image output
+            Modalities = new List<Modality> { Modality.Text, Modality.Image } // Request image output
         };
 
         try
@@ -50,9 +52,63 @@ public class ImageGenerationExample
                 if (choice?.Message?.Images != null && choice.Message.Images.Count > 0)
                 {
                     Console.WriteLine("Image(s) generated successfully!");
+                    
+                    // Create output directory if it doesn't exist
+                    var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "generated-images");
+                    Directory.CreateDirectory(outputDir);
+                    
+                    using var httpClient = new HttpClient();
+                    int imageIndex = 0;
+                    
                     foreach (var image in choice.Message.Images)
                     {
-                        Console.WriteLine($"Image URL: {image.ImageUrl?.Url}");
+                        if (!string.IsNullOrEmpty(image.ImageUrl?.Url))
+                        {
+                            Console.WriteLine($"Image URL: {image.ImageUrl.Url}");
+                            
+                            try
+                            {
+                                // Check if it's a base64 image
+                                if (image.ImageUrl.Url.StartsWith("data:image/"))
+                                {
+                                    // Extract base64 data
+                                    var base64Data = image.ImageUrl.Url.Substring(image.ImageUrl.Url.IndexOf("base64,") + 7);
+                                    var imageBytes = Convert.FromBase64String(base64Data);
+                                    
+                                    // Determine file extension from data URL
+                                    var mimeType = image.ImageUrl.Url.Substring(5, image.ImageUrl.Url.IndexOf(';') - 5);
+                                    var extension = mimeType.Split('/')[1];
+                                    if (extension == "jpeg") extension = "jpg";
+                                    
+                                    var fileName = $"generated_{DateTime.Now:yyyyMMdd_HHmmss}_{imageIndex}.{extension}";
+                                    var filePath = Path.Combine(outputDir, fileName);
+                                    
+                                    await File.WriteAllBytesAsync(filePath, imageBytes);
+                                    Console.WriteLine($"Saved image to: {filePath}");
+                                }
+                                else
+                                {
+                                    // Download image from URL
+                                    var imageBytes = await httpClient.GetByteArrayAsync(image.ImageUrl.Url);
+                                    
+                                    // Try to determine extension from URL or default to jpg
+                                    var extension = Path.GetExtension(new Uri(image.ImageUrl.Url).AbsolutePath);
+                                    if (string.IsNullOrEmpty(extension)) extension = ".jpg";
+                                    
+                                    var fileName = $"generated_{DateTime.Now:yyyyMMdd_HHmmss}_{imageIndex}{extension}";
+                                    var filePath = Path.Combine(outputDir, fileName);
+                                    
+                                    await File.WriteAllBytesAsync(filePath, imageBytes);
+                                    Console.WriteLine($"Saved image to: {filePath}");
+                                }
+                                
+                                imageIndex++;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Failed to save image: {ex.Message}");
+                            }
+                        }
                     }
                 }
                 

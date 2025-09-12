@@ -76,7 +76,7 @@ The examples use various models including:
 You can change the model by modifying the `DefaultModel` in the configuration:
 
 ```csharp
-var config = new OpenRouterConfig
+var config = new OpenRouterClientOptions
 {
     ApiKey = apiKey,
     DefaultModel = ModelConstants.OpenAI.Gpt4oMini
