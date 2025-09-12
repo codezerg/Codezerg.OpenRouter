@@ -7,7 +7,7 @@ namespace Codezerg.OpenRouter.Models;
 public class ChatContentPart
 {
     [JsonProperty("type")]
-    public string Type { get; set; } = "text";
+    public ContentType Type { get; set; } = ContentType.Text;
 
     [JsonProperty("text")]
     public string? Text { get; set; }
@@ -25,7 +25,7 @@ public class ChatContentPart
     {
         return new ChatContentPart
         {
-            Type = "text",
+            Type = ContentType.Text,
             Text = text
         };
     }
@@ -34,7 +34,7 @@ public class ChatContentPart
     {
         return new ChatContentPart
         {
-            Type = "image_url",
+            Type = ContentType.ImageUrl,
             ImageUrl = new ImageUrl { Url = url, Detail = detail }
         };
     }
@@ -44,21 +44,21 @@ public class ChatContentPart
     {
         return new ChatContentPart
         {
-            Type = "input_audio",
+            Type = ContentType.InputAudio,
             InputAudio = new AudioData { Data = data, Format = format }
         };
     }
 
     // Helper properties
     [JsonIgnore]
-    public bool IsText => Type == "text";
+    public bool IsText => Type == ContentType.Text;
 
     [JsonIgnore]
-    public bool IsImage => Type == "image_url";
+    public bool IsImage => Type == ContentType.ImageUrl;
 
 
     [JsonIgnore]
-    public bool IsAudio => Type == "input_audio";
+    public bool IsAudio => Type == ContentType.InputAudio;
 
 }
 

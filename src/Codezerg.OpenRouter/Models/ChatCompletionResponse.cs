@@ -19,7 +19,7 @@ public class ChatCompletionResponse
     public string Model { get; set; } = string.Empty;
 
     [JsonProperty("object")]
-    public string Object { get; set; } = string.Empty;
+    public ObjectType Object { get; set; } = ObjectType.ChatCompletion;
 
     [JsonProperty("system_fingerprint")]
     public string? SystemFingerprint { get; set; }
@@ -37,10 +37,10 @@ public class ChatCompletionChoice
     public int Index { get; set; }
 
     [JsonProperty("finish_reason")]
-    public string? FinishReason { get; set; }
+    public FinishReason? FinishReason { get; set; }
 
     [JsonProperty("native_finish_reason")]
-    public string? NativeFinishReason { get; set; }
+    public FinishReason? NativeFinishReason { get; set; }
 
     [JsonProperty("error")]
     public ErrorResponse? Error { get; set; }
@@ -61,7 +61,8 @@ public class Delta
     public string? Content { get; set; }
 
     [JsonProperty("role")]
-    public string? Role { get; set; }
+    [JsonConverter(typeof(ChatRoleNullableConverter))]
+    public ChatRole? Role { get; set; }
 
     [JsonProperty("tool_calls")]
     public List<ToolCall>? ToolCalls { get; set; }

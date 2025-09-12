@@ -9,7 +9,7 @@ namespace Codezerg.OpenRouter.Models;
 public class ChatMessage
 {
     [JsonProperty("role")]
-    public string Role { get; set; } = "user";
+    public ChatRole Role { get; set; } = ChatRole.User;
 
     [JsonProperty("content")]
     [JsonConverter(typeof(ChatMessageContentConverter))]
@@ -30,13 +30,13 @@ public class ChatMessage
     // Convenience constructors
     public ChatMessage() { }
 
-    public ChatMessage(string role, string text)
+    public ChatMessage(ChatRole role, string text)
     {
         Role = role;
         Content = new List<ChatContentPart> { ChatContentPart.CreateText(text) };
     }
 
-    public ChatMessage(string role, params ChatContentPart[] parts)
+    public ChatMessage(ChatRole role, params ChatContentPart[] parts)
     {
         Role = role;
         Content = parts.ToList();
@@ -44,28 +44,28 @@ public class ChatMessage
 
     // Static factory methods for common cases
     public static ChatMessage User(string text) 
-        => new("user", text);
+        => new(ChatRole.User, text);
 
     public static ChatMessage User(params ChatContentPart[] parts) 
-        => new("user", parts);
+        => new(ChatRole.User, parts);
 
     public static ChatMessage Assistant(string text) 
-        => new("assistant", text);
+        => new(ChatRole.Assistant, text);
 
     public static ChatMessage Assistant(params ChatContentPart[] parts) 
-        => new("assistant", parts);
+        => new(ChatRole.Assistant, parts);
 
     public static ChatMessage System(string text) 
-        => new("system", text);
+        => new(ChatRole.System, text);
 
     public static ChatMessage System(params ChatContentPart[] parts) 
-        => new("system", parts);
+        => new(ChatRole.System, parts);
 
     public static ChatMessage Tool(string content, string toolCallId)
     {
         return new ChatMessage
         {
-            Role = "tool",
+            Role = ChatRole.Tool,
             Content = new List<ChatContentPart> { ChatContentPart.CreateText(content) },
             ToolCallId = toolCallId
         };
@@ -132,7 +132,7 @@ public class ChatMessage
     public bool IsMultimodal => Content.Count > 1 || Content.Any(c => !c.IsText);
 
     [JsonIgnore]
-    public bool IsToolResponse => Role == "tool" && !string.IsNullOrEmpty(ToolCallId);
+    public bool IsToolResponse => Role == ChatRole.Tool && !string.IsNullOrEmpty(ToolCallId);
 
     [JsonIgnore]
     public bool HasToolCalls => ToolCalls?.Any() == true;

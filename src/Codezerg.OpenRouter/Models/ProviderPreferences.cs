@@ -12,7 +12,7 @@ public class ProviderPreferences
     public bool? RequireParameters { get; set; }
 
     [JsonProperty("data_collection")]
-    public string? DataCollection { get; set; }
+    public DataCollectionOption? DataCollection { get; set; }
 
     [JsonProperty("order")]
     public List<string>? Order { get; set; }
@@ -30,7 +30,7 @@ public class ProviderPreferences
 public class ResponseFormat
 {
     [JsonProperty("type")]
-    public string Type { get; set; } = "json_object";
+    public ResponseFormatType Type { get; set; } = ResponseFormatType.JsonObject;
 
     [JsonProperty("json_schema")]
     public object? JsonSchema { get; set; }
@@ -39,7 +39,7 @@ public class ResponseFormat
 public class Prediction
 {
     [JsonProperty("type")]
-    public string Type { get; set; } = "content";
+    public PredictionType Type { get; set; } = PredictionType.Content;
 
     [JsonProperty("content")]
     public string Content { get; set; } = string.Empty;

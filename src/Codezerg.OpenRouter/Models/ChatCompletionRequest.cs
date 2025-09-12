@@ -90,11 +90,11 @@ public class ChatCompletionRequest
     public string? User { get; set; }
 
     [JsonProperty("modalities")]
-    public List<string>? Modalities { get; set; }
+    public List<Modality>? Modalities { get; set; }
 
     [JsonProperty("parallel_tool_calls")]
     public bool? ParallelToolCalls { get; set; }
 
     [JsonProperty("verbosity")]
-    public string? Verbosity { get; set; }
+    public VerbosityLevel? Verbosity { get; set; }
 }

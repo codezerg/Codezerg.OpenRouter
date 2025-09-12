@@ -7,7 +7,7 @@ namespace Codezerg.OpenRouter.Models;
 public class Tool
 {
     [JsonProperty("type")]
-    public string Type { get; set; } = "function";
+    public ToolType Type { get; set; } = ToolType.Function;
 
     [JsonProperty("function")]
     public FunctionDescription Function { get; set; } = new FunctionDescription();
@@ -31,7 +31,7 @@ public class ToolCall
     public string Id { get; set; } = string.Empty;
 
     [JsonProperty("type")]
-    public string Type { get; set; } = "function";
+    public ToolType Type { get; set; } = ToolType.Function;
 
     [JsonProperty("function")]
     public FunctionCall Function { get; set; } = new FunctionCall();
@@ -49,7 +49,7 @@ public class FunctionCall
 public class ToolChoiceFunction
 {
     [JsonProperty("type")]
-    public string Type { get; set; } = "function";
+    public ToolType Type { get; set; } = ToolType.Function;
 
     [JsonProperty("function")]
     public ToolChoiceFunctionDetails Function { get; set; } = new ToolChoiceFunctionDetails();
