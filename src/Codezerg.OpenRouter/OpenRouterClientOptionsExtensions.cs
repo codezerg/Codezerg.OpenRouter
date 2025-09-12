@@ -1,18 +1,18 @@
-﻿using System;
+using System;
 
 namespace Codezerg.OpenRouter;
 
 /// <summary>
-/// Extension methods for <see cref="OpenRouterConfig"/>.
+/// Extension methods for <see cref="OpenRouterClientOptions"/>.
 /// Provides validation, cloning, and fluent-style configuration.
 /// </summary>
-public static class OpenRouterConfigExtensions
+public static class OpenRouterClientOptionsExtensions
 {
     /// <summary>
-    /// Validates that the <see cref="OpenRouterConfig"/> instance has the required properties set.
+    /// Validates that the <see cref="OpenRouterClientOptions"/> instance has the required properties set.
     /// Throws <see cref="InvalidOperationException"/> if validation fails.
     /// </summary>
-    public static void Validate(this OpenRouterConfig options)
+    public static void Validate(this OpenRouterClientOptions options)
     {
         if (options == null)
             throw new ArgumentNullException(nameof(options));
@@ -30,11 +30,11 @@ public static class OpenRouterConfigExtensions
     /// <summary>
     /// Creates a shallow copy of the options instance.
     /// </summary>
-    public static OpenRouterConfig Clone(this OpenRouterConfig options)
+    public static OpenRouterClientOptions Clone(this OpenRouterClientOptions options)
     {
         if (options == null) throw new ArgumentNullException(nameof(options));
 
-        return new OpenRouterConfig
+        return new OpenRouterClientOptions
         {
             ApiKey = options.ApiKey,
             Endpoint = options.Endpoint,
@@ -50,43 +50,43 @@ public static class OpenRouterConfigExtensions
     // Fluent Setters
     // ================
 
-    public static OpenRouterConfig WithApiKey(this OpenRouterConfig options, string apiKey)
+    public static OpenRouterClientOptions WithApiKey(this OpenRouterClientOptions options, string apiKey)
     {
         options.ApiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
         return options;
     }
 
-    public static OpenRouterConfig WithEndpoint(this OpenRouterConfig options, string endpoint)
+    public static OpenRouterClientOptions WithEndpoint(this OpenRouterClientOptions options, string endpoint)
     {
         options.Endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
         return options;
     }
 
-    public static OpenRouterConfig WithDefaultModel(this OpenRouterConfig options, string defaultModel)
+    public static OpenRouterClientOptions WithDefaultModel(this OpenRouterClientOptions options, string defaultModel)
     {
         options.DefaultModel = defaultModel ?? throw new ArgumentNullException(nameof(defaultModel));
         return options;
     }
 
-    public static OpenRouterConfig WithTimeout(this OpenRouterConfig options, TimeSpan timeout)
+    public static OpenRouterClientOptions WithTimeout(this OpenRouterClientOptions options, TimeSpan timeout)
     {
         options.Timeout = timeout;
         return options;
     }
 
-    public static OpenRouterConfig WithUserAgent(this OpenRouterConfig options, string userAgent)
+    public static OpenRouterClientOptions WithUserAgent(this OpenRouterClientOptions options, string userAgent)
     {
         options.UserAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         return options;
     }
 
-    public static OpenRouterConfig WithReferer(this OpenRouterConfig options, string referer)
+    public static OpenRouterClientOptions WithReferer(this OpenRouterClientOptions options, string referer)
     {
         options.Referer = referer ?? throw new ArgumentNullException(nameof(referer));
         return options;
     }
 
-    public static OpenRouterConfig WithEnableDebugLogging(this OpenRouterConfig options, bool enableDebugLogging = true)
+    public static OpenRouterClientOptions WithEnableDebugLogging(this OpenRouterClientOptions options, bool enableDebugLogging = true)
     {
         options.EnableDebugLogging = enableDebugLogging;
         return options;

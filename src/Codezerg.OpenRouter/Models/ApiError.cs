@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Codezerg.OpenRouter.Models;
 
-public class ErrorResponse
+public class ApiError
 {
     [JsonProperty("code")]
     public int Code { get; set; }
@@ -15,7 +15,7 @@ public class ErrorResponse
     public Dictionary<string, object>? Metadata { get; set; }
 }
 
-public class ModerationErrorMetadata
+public class ModerationErrorDetails
 {
     [JsonProperty("reasons")]
     public List<string> Reasons { get; set; } = new List<string>();
@@ -30,7 +30,7 @@ public class ModerationErrorMetadata
     public string ModelSlug { get; set; } = string.Empty;
 }
 
-public class ProviderErrorMetadata
+public class ProviderErrorDetails
 {
     [JsonProperty("provider_name")]
     public string ProviderName { get; set; } = string.Empty;

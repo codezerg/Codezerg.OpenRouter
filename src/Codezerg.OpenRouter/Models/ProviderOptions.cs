@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Codezerg.OpenRouter.Models;
 
-public class ProviderPreferences
+public class ProviderOptions
 {
     [JsonProperty("allow_fallbacks")]
     public bool? AllowFallbacks { get; set; }
@@ -27,7 +27,7 @@ public class ProviderPreferences
     public List<string>? Block { get; set; }
 }
 
-public class ResponseFormat
+public class ResponseFormatOptions
 {
     [JsonProperty("type")]
     public ResponseFormatType Type { get; set; } = ResponseFormatType.JsonObject;
@@ -36,7 +36,7 @@ public class ResponseFormat
     public object? JsonSchema { get; set; }
 }
 
-public class Prediction
+public class PredictionOptions
 {
     [JsonProperty("type")]
     public PredictionType Type { get; set; } = PredictionType.Content;

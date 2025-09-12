@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Codezerg.OpenRouter;
 
-public class ChatCompletionSession
+public class ChatSession
 {
     public int MyProperty { get; set; }
 

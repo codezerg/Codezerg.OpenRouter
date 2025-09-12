@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 
 namespace Codezerg.OpenRouter;
 
 /// <summary>
 /// Options for configuring the <see cref="OpenRouterClient"/>.
 /// </summary>
-public class OpenRouterConfig
+public class OpenRouterClientOptions
 {
     /// <summary>
     /// The API key used to authenticate requests to OpenRouter.

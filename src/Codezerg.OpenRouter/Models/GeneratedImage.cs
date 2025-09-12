@@ -8,10 +8,10 @@ public class GeneratedImage
     public string Type { get; set; } = "image_url";
 
     [JsonProperty("image_url")]
-    public GeneratedImageUrl ImageUrl { get; set; } = new GeneratedImageUrl();
+    public GeneratedImageReference ImageUrl { get; set; } = new GeneratedImageReference();
 }
 
-public class GeneratedImageUrl
+public class GeneratedImageReference
 {
     [JsonProperty("url")]
     public string Url { get; set; } = string.Empty;

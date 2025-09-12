@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Codezerg.OpenRouter.Models;
 
-public class ChatCompletionRequest
+public class ChatRequest
 {
     [JsonProperty("messages")]
     public List<ChatMessage>? Messages { get; set; }
@@ -18,7 +18,7 @@ public class ChatCompletionRequest
     public string? Model { get; set; }
 
     [JsonProperty("response_format")]
-    public ResponseFormat? ResponseFormat { get; set; }
+    public ResponseFormatOptions? ResponseFormat { get; set; }
 
     [JsonProperty("stop", NullValueHandling = NullValueHandling.Ignore)]
     public object? Stop { get; set; }
@@ -33,7 +33,7 @@ public class ChatCompletionRequest
     public double? Temperature { get; set; }
 
     [JsonProperty("tools")]
-    public List<Tool>? Tools { get; set; }
+    public List<ToolDefinition>? Tools { get; set; }
 
     [JsonProperty("tool_choice")]
     public object? ToolChoice { get; set; }
@@ -72,7 +72,7 @@ public class ChatCompletionRequest
     public double? TopA { get; set; }
 
     [JsonProperty("prediction")]
-    public Prediction? Prediction { get; set; }
+    public PredictionOptions? Prediction { get; set; }
 
     [JsonProperty("transforms")]
     public List<string>? Transforms { get; set; }
@@ -84,7 +84,7 @@ public class ChatCompletionRequest
     public string? Route { get; set; }
 
     [JsonProperty("provider")]
-    public ProviderPreferences? Provider { get; set; }
+    public ProviderOptions? Provider { get; set; }
 
     [JsonProperty("user")]
     public string? User { get; set; }

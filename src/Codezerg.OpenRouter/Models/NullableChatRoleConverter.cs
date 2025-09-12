@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Codezerg.OpenRouter.Models;
 
-public class ChatRoleNullableConverter : JsonConverter<ChatRole?>
+public class NullableChatRoleConverter : JsonConverter<ChatRole?>
 {
     public override ChatRole? ReadJson(JsonReader reader, Type objectType, ChatRole? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {

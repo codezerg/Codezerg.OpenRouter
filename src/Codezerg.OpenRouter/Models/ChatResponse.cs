@@ -4,13 +4,13 @@ using Newtonsoft.Json;
 
 namespace Codezerg.OpenRouter.Models;
 
-public class ChatCompletionResponse
+public class ChatResponse
 {
     [JsonProperty("id")]
     public string Id { get; set; } = string.Empty;
 
     [JsonProperty("choices")]
-    public List<ChatCompletionChoice> Choices { get; set; } = new List<ChatCompletionChoice>();
+    public List<ChatChoice> Choices { get; set; } = new List<ChatChoice>();
 
     [JsonProperty("created")]
     public long Created { get; set; }
@@ -25,43 +25,43 @@ public class ChatCompletionResponse
     public string? SystemFingerprint { get; set; }
 
     [JsonProperty("usage")]
-    public Usage? Usage { get; set; }
+    public TokenUsage? Usage { get; set; }
 
     [JsonProperty("error")]
-    public ErrorResponse? Error { get; set; }
+    public ApiError? Error { get; set; }
 }
 
-public class ChatCompletionChoice
+public class ChatChoice
 {
     [JsonProperty("index")]
     public int Index { get; set; }
 
     [JsonProperty("finish_reason")]
-    public FinishReason? FinishReason { get; set; }
+    public CompletionFinishReason? FinishReason { get; set; }
 
     [JsonProperty("native_finish_reason")]
-    public FinishReason? NativeFinishReason { get; set; }
+    public CompletionFinishReason? NativeFinishReason { get; set; }
 
     [JsonProperty("error")]
-    public ErrorResponse? Error { get; set; }
+    public ApiError? Error { get; set; }
 
     [JsonProperty("message")]
     public ChatMessage? Message { get; set; }
 
     [JsonProperty("delta")]
-    public Delta? Delta { get; set; }
+    public ChatDelta? Delta { get; set; }
 
     [JsonProperty("text")]
     public string? Text { get; set; }
 }
 
-public class Delta
+public class ChatDelta
 {
     [JsonProperty("content")]
     public string? Content { get; set; }
 
     [JsonProperty("role")]
-    [JsonConverter(typeof(ChatRoleNullableConverter))]
+    [JsonConverter(typeof(NullableChatRoleConverter))]
     public ChatRole? Role { get; set; }
 
     [JsonProperty("tool_calls")]
@@ -71,7 +71,7 @@ public class Delta
     public List<GeneratedImage>? Images { get; set; }
 }
 
-public class Usage
+public class TokenUsage
 {
     [JsonProperty("prompt_tokens")]
     public int PromptTokens { get; set; }

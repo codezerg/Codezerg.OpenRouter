@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Codezerg.OpenRouter.Models;
 
-public class Tool
+public class ToolDefinition
 {
     [JsonProperty("type")]
     public ToolType Type { get; set; } = ToolType.Function;
@@ -46,16 +46,16 @@ public class FunctionCall
     public string Arguments { get; set; } = string.Empty;
 }
 
-public class ToolChoiceFunction
+public class ToolChoice
 {
     [JsonProperty("type")]
     public ToolType Type { get; set; } = ToolType.Function;
 
     [JsonProperty("function")]
-    public ToolChoiceFunctionDetails Function { get; set; } = new ToolChoiceFunctionDetails();
+    public ToolChoiceDetails Function { get; set; } = new ToolChoiceDetails();
 }
 
-public class ToolChoiceFunctionDetails
+public class ToolChoiceDetails
 {
     [JsonProperty("name")]
     public string Name { get; set; } = string.Empty;

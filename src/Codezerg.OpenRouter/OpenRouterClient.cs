@@ -17,7 +17,7 @@ namespace Codezerg.OpenRouter;
 public class OpenRouterClient : IDisposable
 {
     private readonly HttpClient _httpClient;
-    private readonly OpenRouterConfig _config;
+    private readonly OpenRouterClientOptions _config;
     private readonly bool _ownsHttpClient;
     private bool _disposed;
 
@@ -27,7 +27,7 @@ public class OpenRouterClient : IDisposable
     /// <param name="config">The configuration options for the client.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when the configuration is invalid.</exception>
-    public OpenRouterClient(OpenRouterConfig config) : this(config, null)
+    public OpenRouterClient(OpenRouterClientOptions config) : this(config, null)
     {
     }
 
@@ -38,7 +38,7 @@ public class OpenRouterClient : IDisposable
     /// <param name="httpClient">An optional HTTP client instance. If null, a new instance will be created.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when the configuration is invalid.</exception>
-    public OpenRouterClient(OpenRouterConfig config, HttpClient httpClient)
+    public OpenRouterClient(OpenRouterClientOptions config, HttpClient httpClient)
     {
         if (config == null)
             throw new ArgumentNullException(nameof(config));
@@ -68,7 +68,7 @@ public class OpenRouterClient : IDisposable
     /// <summary>
     /// Gets the configuration used by this client instance.
     /// </summary>
-    public OpenRouterConfig Configuration => _config.Clone();
+    public OpenRouterClientOptions Configuration => _config.Clone();
 
     private void ConfigureHttpClient()
     {
@@ -97,7 +97,7 @@ public class OpenRouterClient : IDisposable
     /// <param name="request">The chat completion request.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task<ChatCompletionResponse> SendChatCompletionAsync(ChatCompletionRequest request, CancellationToken cancellationToken = default)
+    public async Task<ChatResponse> SendChatCompletionAsync(ChatRequest request, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
 
@@ -126,7 +126,7 @@ public class OpenRouterClient : IDisposable
         response.EnsureSuccessStatusCode();
 
         var responseJson = await response.Content.ReadAsStringAsync();
-        var result = JsonConvert.DeserializeObject<ChatCompletionResponse>(responseJson);
+        var result = JsonConvert.DeserializeObject<ChatResponse>(responseJson);
 
         if (result == null)
             throw new InvalidOperationException("Failed to deserialize response from OpenRouter API.");
@@ -140,8 +140,8 @@ public class OpenRouterClient : IDisposable
     /// <param name="request">The chat completion request.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>An async enumerable of chat completion chunks.</returns>
-    public async IAsyncEnumerable<ChatCompletionResponse> StreamChatCompletionAsync(
-        ChatCompletionRequest request,
+    public async IAsyncEnumerable<ChatResponse> StreamChatCompletionAsync(
+        ChatRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
@@ -186,10 +186,10 @@ public class OpenRouterClient : IDisposable
                 if (data == "[DONE]")
                     break;
 
-                ChatCompletionResponse? chunk = null;
+                ChatResponse? chunk = null;
                 try
                 {
-                    chunk = JsonConvert.DeserializeObject<ChatCompletionResponse>(data);
+                    chunk = JsonConvert.DeserializeObject<ChatResponse>(data);
                 }
                 catch (JsonException)
                 {

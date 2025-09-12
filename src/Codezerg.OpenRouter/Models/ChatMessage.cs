@@ -12,8 +12,8 @@ public class ChatMessage
     public ChatRole Role { get; set; } = ChatRole.User;
 
     [JsonProperty("content")]
-    [JsonConverter(typeof(ChatMessageContentConverter))]
-    public List<ChatContentPart> Content { get; set; } = new List<ChatContentPart>();
+    [JsonConverter(typeof(MessageContentConverter))]
+    public List<MessagePart> Content { get; set; } = new List<MessagePart>();
 
     [JsonProperty("name")]
     public string? Name { get; set; }
@@ -33,10 +33,10 @@ public class ChatMessage
     public ChatMessage(ChatRole role, string text)
     {
         Role = role;
-        Content = new List<ChatContentPart> { ChatContentPart.CreateText(text) };
+        Content = new List<MessagePart> { MessagePart.CreateText(text) };
     }
 
-    public ChatMessage(ChatRole role, params ChatContentPart[] parts)
+    public ChatMessage(ChatRole role, params MessagePart[] parts)
     {
         Role = role;
         Content = parts.ToList();
@@ -46,19 +46,19 @@ public class ChatMessage
     public static ChatMessage User(string text) 
         => new(ChatRole.User, text);
 
-    public static ChatMessage User(params ChatContentPart[] parts) 
+    public static ChatMessage User(params MessagePart[] parts) 
         => new(ChatRole.User, parts);
 
     public static ChatMessage Assistant(string text) 
         => new(ChatRole.Assistant, text);
 
-    public static ChatMessage Assistant(params ChatContentPart[] parts) 
+    public static ChatMessage Assistant(params MessagePart[] parts) 
         => new(ChatRole.Assistant, parts);
 
     public static ChatMessage System(string text) 
         => new(ChatRole.System, text);
 
-    public static ChatMessage System(params ChatContentPart[] parts) 
+    public static ChatMessage System(params MessagePart[] parts) 
         => new(ChatRole.System, parts);
 
     public static ChatMessage Tool(string content, string toolCallId)
@@ -66,7 +66,7 @@ public class ChatMessage
         return new ChatMessage
         {
             Role = ChatRole.Tool,
-            Content = new List<ChatContentPart> { ChatContentPart.CreateText(content) },
+            Content = new List<MessagePart> { MessagePart.CreateText(content) },
             ToolCallId = toolCallId
         };
     }
@@ -92,20 +92,20 @@ public class ChatMessage
 
     public ChatMessage AddText(string text)
     {
-        Content.Add(ChatContentPart.CreateText(text));
+        Content.Add(MessagePart.CreateText(text));
         return this;
     }
 
     public ChatMessage AddImage(string url, string? detail = null)
     {
-        Content.Add(ChatContentPart.CreateImage(url, detail));
+        Content.Add(MessagePart.CreateImage(url, detail));
         return this;
     }
 
 
     public ChatMessage AddAudio(string data, string format = "wav")
     {
-        Content.Add(ChatContentPart.CreateAudio(data, format));
+        Content.Add(MessagePart.CreateAudio(data, format));
         return this;
     }
 
