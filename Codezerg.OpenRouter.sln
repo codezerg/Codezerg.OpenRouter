@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36414.22 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Codezerg.OpenRouter", "src\Codezerg.OpenRouter\Codezerg.OpenRouter.csproj", "{C2C06AD0-0EC7-A61B-4FA6-06857F6526FC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "demo", "demo", "{B3E816C2-2A6F-4AFD-A1F3-189080208F5C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageAnalyzer", "demo\ImageAnalyzer\ImageAnalyzer.csproj", "{D045667B-224F-4EEB-9CBD-761A7636E793}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamingResponse", "demo\StreamingResponse\StreamingResponse.csproj", "{34969EC2-367F-E265-66C9-F57E85E8FCCC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{D57E1A3D-E8FB-4AEE-A750-8BBB6AAC04A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Codezerg.OpenRouter.Examples", "examples\Codezerg.OpenRouter.Examples.csproj", "{227503F6-A5B0-E318-723A-34C34708EFFC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2C06AD0-0EC7-A61B-4FA6-06857F6526FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2C06AD0-0EC7-A61B-4FA6-06857F6526FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2C06AD0-0EC7-A61B-4FA6-06857F6526FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2C06AD0-0EC7-A61B-4FA6-06857F6526FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D045667B-224F-4EEB-9CBD-761A7636E793}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D045667B-224F-4EEB-9CBD-761A7636E793}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D045667B-224F-4EEB-9CBD-761A7636E793}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D045667B-224F-4EEB-9CBD-761A7636E793}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34969EC2-367F-E265-66C9-F57E85E8FCCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34969EC2-367F-E265-66C9-F57E85E8FCCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34969EC2-367F-E265-66C9-F57E85E8FCCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34969EC2-367F-E265-66C9-F57E85E8FCCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{227503F6-A5B0-E318-723A-34C34708EFFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{227503F6-A5B0-E318-723A-34C34708EFFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{227503F6-A5B0-E318-723A-34C34708EFFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{227503F6-A5B0-E318-723A-34C34708EFFC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C2C06AD0-0EC7-A61B-4FA6-06857F6526FC} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{D045667B-224F-4EEB-9CBD-761A7636E793} = {B3E816C2-2A6F-4AFD-A1F3-189080208F5C}
+		{34969EC2-367F-E265-66C9-F57E85E8FCCC} = {B3E816C2-2A6F-4AFD-A1F3-189080208F5C}
+		{227503F6-A5B0-E318-723A-34C34708EFFC} = {D57E1A3D-E8FB-4AEE-A750-8BBB6AAC04A1}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B1DD69E0-50B2-4423-8D57-CDCFC4F8041D}
+	EndGlobalSection
+EndGlobal
