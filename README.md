@@ -20,7 +20,9 @@ dotnet add package Codezerg.OpenRouter
 ## Quick Start
 
 ```csharp
+using System.Collections.Generic;
 using Codezerg.OpenRouter;
+using Codezerg.OpenRouter.Models;
 
 // Initialize the client
 var config = new OpenRouterClientOptions
@@ -34,19 +36,14 @@ var client = new OpenRouterClient(config);
 // Send a chat request
 var request = new ChatRequest
 {
-    Model = "openai/gpt-4",
-    Messages = new[]
+    Messages = new List<ChatMessage>
     {
-        new ChatMessage
-        {
-            Role = ChatRole.User,
-            Content = "Hello! How can you help me today?"
-        }
+        ChatMessage.User("Hello! How can you help me today?")
     }
 };
 
-var response = await client.ChatCompletionAsync(request);
-Console.WriteLine(response.Choices[0].Message.Content);
+var response = await client.SendChatCompletionAsync(request);
+Console.WriteLine(response.Choices[0].Message.FirstTextContent);
 ```
 
 ## Streaming Example
@@ -54,21 +51,16 @@ Console.WriteLine(response.Choices[0].Message.Content);
 ```csharp
 var streamRequest = new ChatRequest
 {
-    Model = "anthropic/claude-3-opus",
-    Messages = new[]
+    Messages = new List<ChatMessage>
     {
-        new ChatMessage
-        {
-            Role = ChatRole.User,
-            Content = "Write a short story about a robot learning to paint."
-        }
+        ChatMessage.User("Write a short story about a robot learning to paint.")
     },
     Stream = true
 };
 
-await foreach (var chunk in client.ChatCompletionStreamAsync(streamRequest))
+await foreach (var chunk in client.StreamChatCompletionAsync(streamRequest))
 {
-    if (chunk.Choices?[0].Delta?.Content != null)
+    if (chunk.Choices?.Count > 0 && chunk.Choices[0].Delta?.Content != null)
     {
         Console.Write(chunk.Choices[0].Delta.Content);
     }
@@ -78,24 +70,16 @@ await foreach (var chunk in client.ChatCompletionStreamAsync(streamRequest))
 ## Multimodal Example
 
 ```csharp
+var multimodalMessage = new ChatMessage(ChatRole.User)
+    .AddText("What's in this image?")
+    .AddImage("https://example.com/image.jpg");
+
 var multimodalRequest = new ChatRequest
 {
-    Model = "openai/gpt-4-vision-preview",
-    Messages = new[]
-    {
-        new ChatMessage
-        {
-            Role = ChatRole.User,
-            Content = new object[]
-            {
-                MessagePart.FromText("What's in this image?"),
-                MessagePart.FromImageUrl("https://example.com/image.jpg")
-            }
-        }
-    }
+    Messages = new List<ChatMessage> { multimodalMessage }
 };
 
-var response = await client.ChatCompletionAsync(multimodalRequest);
+var response = await client.SendChatCompletionAsync(multimodalRequest);
 ```
 
 ## Configuration
