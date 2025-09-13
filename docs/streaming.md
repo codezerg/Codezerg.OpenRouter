@@ -1,253 +1,539 @@
-# Streaming
+# Streaming Responses
 
-> Learn how to implement streaming responses with OpenRouter's API. Complete guide to Server-Sent Events (SSE) and real-time model outputs.
+This guide covers the streaming capabilities of Codezerg.OpenRouter, allowing you to receive and process LLM responses in real-time as they are generated.
 
-The OpenRouter API allows streaming responses from *any model*. This is useful for building chat interfaces or other applications where the UI should update as the model generates the response.
+## Overview
 
-To enable streaming, you can set the `stream` parameter to `true` in your request. The model will then stream the response to the client in chunks, rather than returning the entire response at once.
+Streaming enables you to receive partial responses as they are generated, rather than waiting for the complete response. This provides:
 
-Here is an example of how to stream a response, and process it:
+- **Better user experience**: Show content as it arrives
+- **Lower perceived latency**: First tokens arrive quickly
+- **Memory efficiency**: Process data without buffering entire response
+- **Cancellation support**: Stop generation mid-stream
 
-<Template
-  data={{
-  API_KEY_REF,
-  MODEL: Model.GPT_4_Omni
-}}
->
-  <CodeGroup>
-    ```python Python
-    import requests
-    import json
+## How Streaming Works
 
-    question = "How would you build the tallest building ever?"
+1. Client sends request with `Stream = true`
+2. Server responds with Server-Sent Events (SSE)
+3. Client parses SSE chunks as they arrive
+4. Each chunk contains a delta (partial content)
+5. Stream ends with a `[DONE]` marker
 
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-      "Authorization": f"Bearer {{API_KEY_REF}}",
-      "Content-Type": "application/json"
-    }
+## Basic Streaming Example
 
-    payload = {
-      "model": "{{MODEL}}",
-      "messages": [{"role": "user", "content": question}],
-      "stream": True
-    }
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Codezerg.OpenRouter;
+using Codezerg.OpenRouter.Models;
 
-    buffer = ""
-    with requests.post(url, headers=headers, json=payload, stream=True) as r:
-      for chunk in r.iter_content(chunk_size=1024, decode_unicode=True):
-        buffer += chunk
-        while True:
-          try:
-            # Find the next complete SSE line
-            line_end = buffer.find('\n')
-            if line_end == -1:
-              break
+var config = new OpenRouterClientOptions
+{
+    ApiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY")
+};
 
-            line = buffer[:line_end].strip()
-            buffer = buffer[line_end + 1:]
+var client = new OpenRouterClient(config);
 
-            if line.startswith('data: '):
-              data = line[6:]
-              if data == '[DONE]':
-                break
+var request = new ChatRequest
+{
+    Model = "openai/gpt-3.5-turbo",
+    Messages = new List<ChatMessage>
+    {
+        ChatMessage.User("Write a short story about a robot.")
+    },
+    Stream = true  // Enable streaming
+};
 
-              try:
-                data_obj = json.loads(data)
-                content = data_obj["choices"][0]["delta"].get("content")
-                if content:
-                  print(content, end="", flush=True)
-              except json.JSONDecodeError:
-                pass
-          except Exception:
-            break
-    ```
-
-    ```typescript TypeScript
-    const question = 'How would you build the tallest building ever?';
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${API_KEY_REF}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: '{{MODEL}}',
-        messages: [{ role: 'user', content: question }],
-        stream: true,
-      }),
-    });
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('Response body is not readable');
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        // Append new chunk to buffer
-        buffer += decoder.decode(value, { stream: true });
-
-        // Process complete lines from buffer
-        while (true) {
-          const lineEnd = buffer.indexOf('\n');
-          if (lineEnd === -1) break;
-
-          const line = buffer.slice(0, lineEnd).trim();
-          buffer = buffer.slice(lineEnd + 1);
-
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') break;
-
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices[0].delta.content;
-              if (content) {
-                console.log(content);
-              }
-            } catch (e) {
-              // Ignore invalid JSON
-            }
-          }
+await foreach (var chunk in client.StreamChatCompletionAsync(request))
+{
+    if (chunk.Choices?.Count > 0)
+    {
+        var delta = chunk.Choices[0].Delta;
+        if (delta?.Content != null)
+        {
+            Console.Write(delta.Content);
         }
-      }
-    } finally {
-      reader.cancel();
     }
-    ```
-  </CodeGroup>
-</Template>
-
-### Additional Information
-
-For SSE (Server-Sent Events) streams, OpenRouter occasionally sends comments to prevent connection timeouts. These comments look like:
-
-```text
-: OPENROUTER PROCESSING
+}
 ```
 
-Comment payload can be safely ignored per the [SSE specs](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation). However, you can leverage it to improve UX as needed, e.g. by showing a dynamic loading indicator.
+## Advanced Streaming Patterns
 
-Some SSE client implementations might not parse the payload according to spec, which leads to an uncaught error when you `JSON.stringify` the non-JSON payloads. We recommend the following clients:
+### Collecting Full Response
 
-* [eventsource-parser](https://github.com/rexxars/eventsource-parser)
-* [OpenAI SDK](https://www.npmjs.com/package/openai)
-* [Vercel AI SDK](https://www.npmjs.com/package/ai)
+```csharp
+var fullResponse = new StringBuilder();
 
-### Stream Cancellation
-
-Streaming requests can be cancelled by aborting the connection. For supported providers, this immediately stops model processing and billing.
-
-<Accordion title="Provider Support">
-  **Supported**
-
-  * OpenAI, Azure, Anthropic
-  * Fireworks, Mancer, Recursal
-  * AnyScale, Lepton, OctoAI
-  * Novita, DeepInfra, Together
-  * Cohere, Hyperbolic, Infermatic
-  * Avian, XAI, Cloudflare
-  * SFCompute, Nineteen, Liquid
-  * Friendli, Chutes, DeepSeek
-
-  **Not Currently Supported**
-
-  * AWS Bedrock, Groq, Modal
-  * Google, Google AI Studio, Minimax
-  * HuggingFace, Replicate, Perplexity
-  * Mistral, AI21, Featherless
-  * Lynn, Lambda, Reflection
-  * SambaNova, Inflection, ZeroOneAI
-  * AionLabs, Alibaba, Nebius
-  * Kluster, Targon, InferenceNet
-</Accordion>
-
-To implement stream cancellation:
-
-<Template
-  data={{
-  API_KEY_REF,
-  MODEL: Model.GPT_4_Omni
-}}
->
-  <CodeGroup>
-    ```python Python
-    import requests
-    from threading import Event, Thread
-
-    def stream_with_cancellation(prompt: str, cancel_event: Event):
-        with requests.Session() as session:
-            response = session.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={"Authorization": f"Bearer {{API_KEY_REF}}"},
-                json={"model": "{{MODEL}}", "messages": [{"role": "user", "content": prompt}], "stream": True},
-                stream=True
-            )
-
-            try:
-                for line in response.iter_lines():
-                    if cancel_event.is_set():
-                        response.close()
-                        return
-                    if line:
-                        print(line.decode(), end="", flush=True)
-            finally:
-                response.close()
-
-    # Example usage:
-    cancel_event = Event()
-    stream_thread = Thread(target=lambda: stream_with_cancellation("Write a story", cancel_event))
-    stream_thread.start()
-
-    # To cancel the stream:
-    cancel_event.set()
-    ```
-
-    ```typescript TypeScript
-    const controller = new AbortController();
-
-    try {
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
+await foreach (var chunk in client.StreamChatCompletionAsync(request))
+{
+    if (chunk.Choices?.Count > 0)
+    {
+        var content = chunk.Choices[0].Delta?.Content;
+        if (content != null)
         {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${{{API_KEY_REF}}}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: '{{MODEL}}',
-            messages: [{ role: 'user', content: 'Write a story' }],
-            stream: true,
-          }),
-          signal: controller.signal,
-        },
-      );
-
-      // Process the stream...
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.log('Stream cancelled');
-      } else {
-        throw error;
-      }
+            fullResponse.Append(content);
+            Console.Write(content);  // Display as it arrives
+        }
     }
+}
 
-    // To cancel the stream:
-    controller.abort();
-    ```
-  </CodeGroup>
-</Template>
+string completeText = fullResponse.ToString();
+```
 
-<Warning>
-  Cancellation only works for streaming requests with supported providers. For
-  non-streaming requests or unsupported providers, the model will continue
-  processing and you will be billed for the complete response.
-</Warning>
+### Handling Metadata
+
+```csharp
+string responseId = null;
+string model = null;
+string finishReason = null;
+
+await foreach (var chunk in client.StreamChatCompletionAsync(request))
+{
+    // Capture metadata from first chunk
+    if (responseId == null && chunk.Id != null)
+    {
+        responseId = chunk.Id;
+        model = chunk.Model;
+    }
+    
+    if (chunk.Choices?.Count > 0)
+    {
+        var choice = chunk.Choices[0];
+        
+        // Process content
+        if (choice.Delta?.Content != null)
+        {
+            Console.Write(choice.Delta.Content);
+        }
+        
+        // Capture finish reason
+        if (choice.FinishReason != null)
+        {
+            finishReason = choice.FinishReason;
+        }
+    }
+}
+
+Console.WriteLine($"\n\nResponse ID: {responseId}");
+Console.WriteLine($"Model: {model}");
+Console.WriteLine($"Finish Reason: {finishReason}");
+```
+
+### Progress Tracking
+
+```csharp
+int chunkCount = 0;
+int characterCount = 0;
+var startTime = DateTime.UtcNow;
+
+await foreach (var chunk in client.StreamChatCompletionAsync(request))
+{
+    chunkCount++;
+    
+    if (chunk.Choices?.Count > 0)
+    {
+        var content = chunk.Choices[0].Delta?.Content;
+        if (content != null)
+        {
+            characterCount += content.Length;
+            Console.Write(content);
+            
+            // Update progress indicator
+            Console.Title = $"Chunks: {chunkCount} | Chars: {characterCount}";
+        }
+    }
+}
+
+var duration = DateTime.UtcNow - startTime;
+Console.WriteLine($"\n\nStreaming Stats:");
+Console.WriteLine($"Total chunks: {chunkCount}");
+Console.WriteLine($"Total characters: {characterCount}");
+Console.WriteLine($"Duration: {duration.TotalSeconds:F2}s");
+Console.WriteLine($"Throughput: {characterCount / duration.TotalSeconds:F0} chars/sec");
+```
+
+## Cancellation Support
+
+### Using CancellationToken
+
+```csharp
+using var cts = new CancellationTokenSource();
+
+// Cancel after 10 seconds
+cts.CancelAfter(TimeSpan.FromSeconds(10));
+
+try
+{
+    await foreach (var chunk in client.StreamChatCompletionAsync(request, cts.Token))
+    {
+        if (chunk.Choices?[0].Delta?.Content != null)
+        {
+            Console.Write(chunk.Choices[0].Delta.Content);
+        }
+    }
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("\n\nStream cancelled.");
+}
+```
+
+### User-Triggered Cancellation
+
+```csharp
+using var cts = new CancellationTokenSource();
+
+// Start streaming in background task
+var streamTask = Task.Run(async () =>
+{
+    await foreach (var chunk in client.StreamChatCompletionAsync(request, cts.Token))
+    {
+        if (chunk.Choices?[0].Delta?.Content != null)
+        {
+            Console.Write(chunk.Choices[0].Delta.Content);
+        }
+    }
+});
+
+// Wait for user input to cancel
+Console.WriteLine("Press any key to stop streaming...");
+Console.ReadKey(true);
+cts.Cancel();
+
+try
+{
+    await streamTask;
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("\nStream stopped by user.");
+}
+```
+
+## Error Handling in Streams
+
+### Graceful Error Recovery
+
+```csharp
+try
+{
+    await foreach (var chunk in client.StreamChatCompletionAsync(request))
+    {
+        try
+        {
+            if (chunk.Choices?[0].Delta?.Content != null)
+            {
+                Console.Write(chunk.Choices[0].Delta.Content);
+            }
+        }
+        catch (Exception chunkError)
+        {
+            // Log individual chunk errors without stopping stream
+            Console.Error.WriteLine($"\nChunk error: {chunkError.Message}");
+        }
+    }
+}
+catch (HttpRequestException httpEx)
+{
+    Console.Error.WriteLine($"\nHTTP error: {httpEx.Message}");
+}
+catch (TaskCanceledException)
+{
+    Console.WriteLine("\nStream timed out or was cancelled.");
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"\nUnexpected error: {ex.Message}");
+}
+```
+
+### Retry Logic for Streams
+
+```csharp
+int maxRetries = 3;
+int retryCount = 0;
+
+while (retryCount < maxRetries)
+{
+    try
+    {
+        await foreach (var chunk in client.StreamChatCompletionAsync(request))
+        {
+            if (chunk.Choices?[0].Delta?.Content != null)
+            {
+                Console.Write(chunk.Choices[0].Delta.Content);
+            }
+        }
+        break; // Success
+    }
+    catch (Exception ex) when (retryCount < maxRetries - 1)
+    {
+        retryCount++;
+        Console.WriteLine($"\nRetry {retryCount}/{maxRetries} after error: {ex.Message}");
+        await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retryCount))); // Exponential backoff
+    }
+}
+```
+
+## Streaming with UI Updates
+
+### WPF/WinForms Example
+
+```csharp
+private async void StartStreamButton_Click(object sender, EventArgs e)
+{
+    outputTextBox.Clear();
+    
+    var request = new ChatRequest
+    {
+        Messages = new List<ChatMessage> { ChatMessage.User(inputTextBox.Text) },
+        Stream = true
+    };
+    
+    await foreach (var chunk in client.StreamChatCompletionAsync(request))
+    {
+        if (chunk.Choices?[0].Delta?.Content != null)
+        {
+            // Update UI on main thread
+            this.Invoke((Action)(() =>
+            {
+                outputTextBox.AppendText(chunk.Choices[0].Delta.Content);
+            }));
+        }
+    }
+}
+```
+
+### ASP.NET Core Streaming Response
+
+```csharp
+[HttpGet("stream")]
+public async IAsyncEnumerable<string> StreamChat([FromQuery] string prompt)
+{
+    var request = new ChatRequest
+    {
+        Messages = new List<ChatMessage> { ChatMessage.User(prompt) },
+        Stream = true
+    };
+    
+    await foreach (var chunk in _client.StreamChatCompletionAsync(request))
+    {
+        if (chunk.Choices?[0].Delta?.Content != null)
+        {
+            yield return chunk.Choices[0].Delta.Content;
+        }
+    }
+}
+```
+
+## Performance Optimization
+
+### Buffering Strategies
+
+```csharp
+public async Task<string> StreamWithBufferingAsync(ChatRequest request)
+{
+    const int bufferSize = 100; // Buffer 100 characters
+    var buffer = new StringBuilder(bufferSize);
+    var fullResponse = new StringBuilder();
+    
+    await foreach (var chunk in client.StreamChatCompletionAsync(request))
+    {
+        if (chunk.Choices?[0].Delta?.Content != null)
+        {
+            buffer.Append(chunk.Choices[0].Delta.Content);
+            
+            // Flush buffer when it reaches threshold
+            if (buffer.Length >= bufferSize)
+            {
+                var content = buffer.ToString();
+                fullResponse.Append(content);
+                Console.Write(content);
+                buffer.Clear();
+            }
+        }
+    }
+    
+    // Flush remaining buffer
+    if (buffer.Length > 0)
+    {
+        var content = buffer.ToString();
+        fullResponse.Append(content);
+        Console.Write(content);
+    }
+    
+    return fullResponse.ToString();
+}
+```
+
+### Parallel Stream Processing
+
+```csharp
+public async Task ProcessMultipleStreamsAsync(List<ChatRequest> requests)
+{
+    var tasks = requests.Select(async (request, index) =>
+    {
+        var response = new StringBuilder();
+        
+        await foreach (var chunk in client.StreamChatCompletionAsync(request))
+        {
+            if (chunk.Choices?[0].Delta?.Content != null)
+            {
+                response.Append(chunk.Choices[0].Delta.Content);
+            }
+        }
+        
+        return (Index: index, Response: response.ToString());
+    });
+    
+    var results = await Task.WhenAll(tasks);
+    
+    foreach (var result in results.OrderBy(r => r.Index))
+    {
+        Console.WriteLine($"Response {result.Index}: {result.Response}");
+    }
+}
+```
+
+## Stream Response Format
+
+### Chunk Structure
+
+Each streaming chunk follows this structure:
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion.chunk",
+  "created": 1234567890,
+  "model": "gpt-3.5-turbo",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Hello"
+      },
+      "finish_reason": null
+    }
+  ]
+}
+```
+
+### Final Chunk
+
+The final chunk includes the finish reason:
+
+```json
+{
+  "choices": [
+    {
+      "index": 0,
+      "delta": {},
+      "finish_reason": "stop"
+    }
+  ]
+}
+```
+
+## Best Practices
+
+### 1. Always Enable Streaming for Long Responses
+
+```csharp
+var request = new ChatRequest
+{
+    Messages = messages,
+    Stream = true,  // Enable for better UX
+    MaxTokens = 2000  // Long responses benefit most
+};
+```
+
+### 2. Handle Connection Interruptions
+
+```csharp
+public async Task<string> ResilientStreamAsync(ChatRequest request)
+{
+    var collected = new StringBuilder();
+    var lastPosition = 0;
+    
+    while (true)
+    {
+        try
+        {
+            await foreach (var chunk in client.StreamChatCompletionAsync(request))
+            {
+                if (chunk.Choices?[0].Delta?.Content != null)
+                {
+                    collected.Append(chunk.Choices[0].Delta.Content);
+                    lastPosition = collected.Length;
+                }
+                
+                if (chunk.Choices?[0].FinishReason != null)
+                {
+                    return collected.ToString();
+                }
+            }
+        }
+        catch (Exception ex) when (lastPosition > 0)
+        {
+            // Attempt to continue from where we left off
+            Console.WriteLine($"Stream interrupted at position {lastPosition}: {ex.Message}");
+            // In practice, you'd need to modify the request to continue
+            throw;
+        }
+    }
+}
+```
+
+### 3. Monitor Stream Health
+
+```csharp
+var lastChunkTime = DateTime.UtcNow;
+var timeout = TimeSpan.FromSeconds(30);
+
+await foreach (var chunk in client.StreamChatCompletionAsync(request))
+{
+    var now = DateTime.UtcNow;
+    if (now - lastChunkTime > timeout)
+    {
+        throw new TimeoutException("Stream stalled");
+    }
+    lastChunkTime = now;
+    
+    // Process chunk...
+}
+```
+
+## Troubleshooting
+
+### Stream Not Starting
+
+- Verify `Stream = true` in request
+- Check network connectivity
+- Ensure model supports streaming
+
+### Incomplete Responses
+
+- Check for `finish_reason` in final chunk
+- Monitor for connection timeouts
+- Verify `MaxTokens` setting
+
+### Performance Issues
+
+- Use `ConfigureAwait(false)` in library code
+- Avoid blocking operations in stream loop
+- Consider buffering for UI updates
+
+## Limitations
+
+- Not all models support streaming
+- Token usage statistics arrive in final chunk only
+- Cannot modify request mid-stream
+- No built-in resume capability
+
+## Further Reading
+
+- [API Reference](api-reference.md#streamchatcompletionasync)
+- [Examples](examples.md#streaming-examples)
+- [Error Handling](error-handling.md)

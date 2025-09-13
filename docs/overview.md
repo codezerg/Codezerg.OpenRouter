@@ -1,350 +1,136 @@
-# API Reference
+# Codezerg.OpenRouter Overview
 
-> Comprehensive guide to OpenRouter's API. Learn about request/response schemas, authentication, parameters, and integration with multiple AI model providers.
+## Introduction
 
-OpenRouter's request and response schemas are very similar to the OpenAI Chat API, with a few small differences. At a high level, **OpenRouter normalizes the schema across models and providers** so you only need to learn one.
+Codezerg.OpenRouter is a comprehensive .NET client library designed to simplify integration with OpenRouter's unified LLM API. OpenRouter provides a single endpoint to access models from multiple providers including OpenAI, Anthropic, Google, Meta, and many others, eliminating the need to manage multiple API integrations.
 
-## Requests
+## Key Features
 
-### Completions Request Format
+### Unified API Access
+- Single client interface for all supported LLM providers
+- Consistent request/response format across different models
+- Automatic routing to the appropriate provider backend
 
-Here is the request schema as a TypeScript type. This will be the body of your `POST` request to the `/api/v1/chat/completions` endpoint (see the [quick start](/docs/quick-start) above for an example).
+### Streaming Support
+- Real-time token-by-token response streaming
+- Modern `IAsyncEnumerable<T>` implementation for efficient memory usage
+- Server-Sent Events (SSE) parsing for live updates
 
-For a complete list of parameters, see the [Parameters](/docs/api-reference/parameters).
+### Multimodal Capabilities
+- Support for text, image, and audio content in messages
+- Vision-capable model integration (GPT-4o, Gemini, Claude)
+- Flexible content construction with fluent API
 
-<CodeGroup>
-  ```typescript title="Request Schema"
-  // Definitions of subtypes are below
-  type Request = {
-    // Either "messages" or "prompt" is required
-    messages?: Message[];
-    prompt?: string;
+### Type Safety
+- Strongly-typed request and response models
+- Comprehensive IntelliSense support
+- Compile-time validation of API interactions
 
-    // If "model" is unspecified, uses the user's default
-    model?: string; // See "Supported Models" section
+### Platform Compatibility
+- .NET Standard 2.0 for broad framework support
+- Works with .NET Framework 4.6.1+, .NET Core 2.0+, and .NET 5.0+
+- Minimal dependencies for reduced conflicts
 
-    // Allows to force the model to produce specific output format.
-    // See models page and note on this docs page for which models support it.
-    response_format?: { type: 'json_object' };
+## Why Use Codezerg.OpenRouter?
 
-    stop?: string | string[];
-    stream?: boolean; // Enable streaming
+### Problem It Solves
+Managing multiple AI provider APIs is complex and time-consuming. Each provider has different:
+- Authentication mechanisms
+- Request/response formats
+- Error handling patterns
+- Rate limiting strategies
+- Feature sets and capabilities
 
-    // See LLM Parameters (openrouter.ai/docs/api-reference/parameters)
-    max_tokens?: number; // Range: [1, context_length)
-    temperature?: number; // Range: [0, 2]
+### Solution
+Codezerg.OpenRouter abstracts these differences, providing:
+- **Single Integration Point**: One library to access all models
+- **Consistent Interface**: Uniform API regardless of the underlying provider
+- **Simplified Billing**: Single API key and billing through OpenRouter
+- **Model Flexibility**: Easy switching between models without code changes
+- **Fallback Support**: Automatic failover between providers
 
-    // Tool calling
-    // Will be passed down as-is for providers implementing OpenAI's interface.
-    // For providers with custom interfaces, we transform and map the properties.
-    // Otherwise, we transform the tools into a YAML template. The model responds with an assistant message.
-    // See models supporting tool calling: openrouter.ai/models?supported_parameters=tools
-    tools?: Tool[];
-    tool_choice?: ToolChoice;
+## Architecture Overview
 
-    // Advanced optional parameters
-    seed?: number; // Integer only
-    top_p?: number; // Range: (0, 1]
-    top_k?: number; // Range: [1, Infinity) Not available for OpenAI models
-    frequency_penalty?: number; // Range: [-2, 2]
-    presence_penalty?: number; // Range: [-2, 2]
-    repetition_penalty?: number; // Range: (0, 2]
-    logit_bias?: { [key: number]: number };
-    top_logprobs: number; // Integer only
-    min_p?: number; // Range: [0, 1]
-    top_a?: number; // Range: [0, 1]
+The library follows a clean, modular architecture:
 
-    // Reduce latency by providing the model with a predicted output
-    // https://platform.openai.com/docs/guides/latency-optimization#use-predicted-outputs
-    prediction?: { type: 'content'; content: string };
-
-    // OpenRouter-only parameters
-    // See "Prompt Transforms" section: openrouter.ai/docs/transforms
-    transforms?: string[];
-    // See "Model Routing" section: openrouter.ai/docs/model-routing
-    models?: string[];
-    route?: 'fallback';
-    // See "Provider Routing" section: openrouter.ai/docs/provider-routing
-    provider?: ProviderPreferences;
-    user?: string; // A stable identifier for your end-users. Used to help detect and prevent abuse.
-  };
-
-  // Subtypes:
-
-  type TextContent = {
-    type: 'text';
-    text: string;
-  };
-
-  type ImageContentPart = {
-    type: 'image_url';
-    image_url: {
-      url: string; // URL or base64 encoded image data
-      detail?: string; // Optional, defaults to "auto"
-    };
-  };
-
-  type ContentPart = TextContent | ImageContentPart;
-
-  type Message =
-    | {
-        role: 'user' | 'assistant' | 'system';
-        // ContentParts are only for the "user" role:
-        content: string | ContentPart[];
-        // If "name" is included, it will be prepended like this
-        // for non-OpenAI models: `{name}: {content}`
-        name?: string;
-      }
-    | {
-        role: 'tool';
-        content: string;
-        tool_call_id: string;
-        name?: string;
-      };
-
-  type FunctionDescription = {
-    description?: string;
-    name: string;
-    parameters: object; // JSON Schema object
-  };
-
-  type Tool = {
-    type: 'function';
-    function: FunctionDescription;
-  };
-
-  type ToolChoice =
-    | 'none'
-    | 'auto'
-    | {
-        type: 'function';
-        function: {
-          name: string;
-        };
-      };
-  ```
-</CodeGroup>
-
-The `response_format` parameter ensures you receive a structured response from the LLM. The parameter is only supported by OpenAI models, Nitro models, and some others - check the providers on the model page on openrouter.ai/models to see if it's supported, and set `require_parameters` to true in your Provider Preferences. See [Provider Routing](/docs/features/provider-routing)
-
-### Headers
-
-OpenRouter allows you to specify some optional headers to identify your app and make it discoverable to users on our site.
-
-* `HTTP-Referer`: Identifies your app on openrouter.ai
-* `X-Title`: Sets/modifies your app's title
-
-<CodeGroup>
-  ```typescript title="TypeScript"
-  fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer <OPENROUTER_API_KEY>',
-      'HTTP-Referer': '<YOUR_SITE_URL>', // Optional. Site URL for rankings on openrouter.ai.
-      'X-Title': '<YOUR_SITE_NAME>', // Optional. Site title for rankings on openrouter.ai.
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'openai/gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: 'What is the meaning of life?',
-        },
-      ],
-    }),
-  });
-  ```
-</CodeGroup>
-
-<Info title="Model routing">
-  If the `model` parameter is omitted, the user or payer's default is used.
-  Otherwise, remember to select a value for `model` from the [supported
-  models](/models) or [API](/api/v1/models), and include the organization
-  prefix. OpenRouter will select the least expensive and best GPUs available to
-  serve the request, and fall back to other providers or GPUs if it receives a
-  5xx response code or if you are rate-limited.
-</Info>
-
-<Info title="Streaming">
-  [Server-Sent Events
-  (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format)
-  are supported as well, to enable streaming *for all models*. Simply send
-  `stream: true` in your request body. The SSE stream will occasionally contain
-  a "comment" payload, which you should ignore (noted below).
-</Info>
-
-<Info title="Non-standard parameters">
-  If the chosen model doesn't support a request parameter (such as `logit_bias`
-  in non-OpenAI models, or `top_k` for OpenAI), then the parameter is ignored.
-  The rest are forwarded to the underlying model API.
-</Info>
-
-### Assistant Prefill
-
-OpenRouter supports asking models to complete a partial response. This can be useful for guiding models to respond in a certain way.
-
-To use this features, simply include a message with `role: "assistant"` at the end of your `messages` array.
-
-<CodeGroup>
-  ```typescript title="TypeScript"
-  fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer <OPENROUTER_API_KEY>',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'openai/gpt-4o',
-      messages: [
-        { role: 'user', content: 'What is the meaning of life?' },
-        { role: 'assistant', content: "I'm not sure, but my best guess is" },
-      ],
-    }),
-  });
-  ```
-</CodeGroup>
-
-## Responses
-
-### CompletionsResponse Format
-
-OpenRouter normalizes the schema across models and providers to comply with the [OpenAI Chat API](https://platform.openai.com/docs/api-reference/chat).
-
-This means that `choices` is always an array, even if the model only returns one completion. Each choice will contain a `delta` property if a stream was requested and a `message` property otherwise. This makes it easier to use the same code for all models.
-
-Here's the response schema as a TypeScript type:
-
-```typescript TypeScript
-// Definitions of subtypes are below
-type Response = {
-  id: string;
-  // Depending on whether you set "stream" to "true" and
-  // whether you passed in "messages" or a "prompt", you
-  // will get a different output shape
-  choices: (NonStreamingChoice | StreamingChoice | NonChatChoice)[];
-  created: number; // Unix timestamp
-  model: string;
-  object: 'chat.completion' | 'chat.completion.chunk';
-
-  system_fingerprint?: string; // Only present if the provider supports it
-
-  // Usage data is always returned for non-streaming.
-  // When streaming, you will get one usage object at
-  // the end accompanied by an empty choices array.
-  usage?: ResponseUsage;
-};
+```
+OpenRouterClient (Main Interface)
+    ├── Configuration (OpenRouterClientOptions)
+    ├── HTTP Communication Layer
+    ├── Serialization/Deserialization
+    └── Models
+        ├── Request Models (ChatRequest, etc.)
+        ├── Response Models (ChatResponse, etc.)
+        └── Shared Types (ChatMessage, ChatRole, etc.)
 ```
 
-```typescript
-// If the provider returns usage, we pass it down
-// as-is. Otherwise, we count using the GPT-4 tokenizer.
+### Core Components
 
-type ResponseUsage = {
-  /** Including images and tools if any */
-  prompt_tokens: number;
-  /** The tokens generated */
-  completion_tokens: number;
-  /** Sum of the above two fields */
-  total_tokens: number;
-};
-```
+1. **OpenRouterClient**: The main entry point for all API operations
+2. **OpenRouterClientOptions**: Configuration container for API keys, timeouts, and defaults
+3. **ChatMessage**: Flexible message structure supporting multiple content types
+4. **Streaming Pipeline**: Async enumerable implementation for real-time responses
 
-```typescript
-// Subtypes:
-type NonChatChoice = {
-  finish_reason: string | null;
-  text: string;
-  error?: ErrorResponse;
-};
+## Use Cases
 
-type NonStreamingChoice = {
-  finish_reason: string | null;
-  native_finish_reason: string | null;
-  message: {
-    content: string | null;
-    role: string;
-    tool_calls?: ToolCall[];
-  };
-  error?: ErrorResponse;
-};
+### Chatbots and Conversational AI
+Build sophisticated chatbots with context awareness and multimodal capabilities.
 
-type StreamingChoice = {
-  finish_reason: string | null;
-  native_finish_reason: string | null;
-  delta: {
-    content: string | null;
-    role?: string;
-    tool_calls?: ToolCall[];
-  };
-  error?: ErrorResponse;
-};
+### Content Generation
+Generate articles, code, documentation, and creative content using various models.
 
-type ErrorResponse = {
-  code: number; // See "Error Handling" section
-  message: string;
-  metadata?: Record<string, unknown>; // Contains additional error information such as provider details, the raw error message, etc.
-};
+### Code Analysis and Generation
+Leverage code-specialized models for development assistance and automation.
 
-type ToolCall = {
-  id: string;
-  type: 'function';
-  function: FunctionCall;
-};
-```
+### Image Analysis
+Process and analyze images using vision-capable models for descriptions, OCR, and insights.
 
-Here's an example:
+### Translation and Localization
+Use language models for accurate, context-aware translations.
 
-```json
-{
-  "id": "gen-xxxxxxxxxxxxxx",
-  "choices": [
-    {
-      "finish_reason": "stop", // Normalized finish_reason
-      "native_finish_reason": "stop", // The raw finish_reason from the provider
-      "message": {
-        // will be "delta" if streaming
-        "role": "assistant",
-        "content": "Hello there!"
-      }
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 0,
-    "completion_tokens": 4,
-    "total_tokens": 4
-  },
-  "model": "openai/gpt-3.5-turbo" // Could also be "anthropic/claude-2.1", etc, depending on the "model" that ends up being used
-}
-```
+### Data Processing
+Extract, transform, and analyze unstructured data using LLM capabilities.
 
-### Finish Reason
+## Model Providers
 
-OpenRouter normalizes each model's `finish_reason` to one of the following values: `tool_calls`, `stop`, `length`, `content_filter`, `error`.
+Access models from leading AI providers:
 
-Some models and providers may have additional finish reasons. The raw finish\_reason string returned by the model is available via the `native_finish_reason` property.
+- **OpenAI**: GPT-4, GPT-3.5, DALL-E
+- **Anthropic**: Claude 3 family (Opus, Sonnet, Haiku)
+- **Google**: Gemini Pro, PaLM
+- **Meta**: Llama 2, Llama 3
+- **Mistral**: Mistral Large, Mixtral
+- **DeepSeek**: DeepSeek Chat models
+- **And many more...**
 
-### Querying Cost and Stats
+## Getting Started
 
-The token counts that are returned in the completions API response are **not** counted via the model's native tokenizer. Instead it uses a normalized, model-agnostic count (accomplished via the GPT4o tokenizer). This is because some providers do not reliably return native token counts. This behavior is becoming more rare, however, and we may add native token counts to the response object in the future.
+To begin using Codezerg.OpenRouter:
 
-Credit usage and model pricing are based on the **native** token counts (not the 'normalized' token counts returned in the API response).
+1. Install the NuGet package
+2. Obtain an API key from [OpenRouter](https://openrouter.ai)
+3. Initialize the client with your configuration
+4. Start making API calls
 
-For precise token accounting using the model's native tokenizer, you can retrieve the full generation information via the `/api/v1/generation` endpoint.
+See the [Getting Started Guide](getting-started.md) for detailed setup instructions.
 
-You can use the returned `id` to query for the generation stats (including token counts and cost) after the request is complete. This is how you can get the cost and tokens for *all models and requests*, streaming and non-streaming.
+## Performance Considerations
 
-<CodeGroup>
-  ```typescript title="Query Generation Stats"
-  const generation = await fetch(
-    'https://openrouter.ai/api/v1/generation?id=$GENERATION_ID',
-    { headers },
-  );
+- **Efficient Streaming**: Memory-efficient streaming for long responses
+- **Connection Pooling**: Reuses HTTP connections for better performance
+- **Async Throughout**: Fully asynchronous operations for scalability
+- **Minimal Overhead**: Thin wrapper over the OpenRouter API
 
-  const stats = await generation.json();
-  ```
-</CodeGroup>
+## Security
 
-Please see the [Generation](/docs/api-reference/get-a-generation) API reference for the full response shape.
+- API keys are never logged or exposed
+- HTTPS-only communication
+- Support for custom headers and authentication
+- Configurable timeout protection
 
-Note that token counts are also available in the `usage` field of the response body for non-streaming completions.
+## Next Steps
+
+- [Getting Started Guide](getting-started.md) - Set up and make your first API call
+- [API Reference](api-reference.md) - Detailed documentation of all classes and methods
+- [Examples](examples.md) - Code samples for common scenarios
+- [Configuration](configuration.md) - Advanced configuration options
