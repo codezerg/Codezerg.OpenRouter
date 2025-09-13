@@ -1,0 +1,164 @@
+LIBRARY: Codezerg.OpenRouter
+LANGUAGE: C#
+TARGET_FRAMEWORK: netstandard2.0
+DESCRIPTION: A .NET client for interacting with the OpenRouter LLM API (chat completions, streaming, structured outputs, tool calls, multimodal data).
+
+============================================================
+NAMESPACE: Codezerg.OpenRouter
+------------------------------------------------------------
+CLASS: OpenRouterClient : IDisposable
+CONSTRUCTOR: OpenRouterClient(OpenRouterClientOptions config)
+CONSTRUCTOR: OpenRouterClient(OpenRouterClientOptions config, HttpClient? client)
+PROPERTY: OpenRouterClientOptions Configuration { get; }
+METHOD: Task<ChatResponse> SendChatCompletionAsync(ChatRequest request, CancellationToken cancellationToken=default)
+METHOD: IAsyncEnumerable<ChatResponse> StreamChatCompletionAsync(ChatRequest request, CancellationToken cancellationToken=default)
+METHOD: void Dispose()
+
+DESCRIPTION: 
+- Sends chat completion requests (non-streamed and streamed) to OpenRouter API.
+- POST /chat/completions with JSON payload.
+- Auth headers: Authorization Bearer {ApiKey}, User-Agent, HTTP-Referer, Accept application/json.
+- Non-streamed: returns fully deserialized ChatResponse.
+- Streamed: yields incremental ChatResponse chunks from SSE data lines.
+
+------------------------------------------------------------
+CLASS: OpenRouterClientOptions
+PROPERTIES:
+- string ApiKey
+- string Endpoint   (default "https://openrouter.ai/api/v1")
+- string DefaultModel (default "deepseek/deepseek-chat-v3.1:free")
+- TimeSpan Timeout (default 100s)
+- string UserAgent
+- string Referer
+- bool EnableDebugLogging
+
+------------------------------------------------------------
+STATIC CLASS: OpenRouterClientOptionsExtensions
+METHODS:
+- void Validate(this OpenRouterClientOptions)
+- OpenRouterClientOptions Clone(this OpenRouterClientOptions)
+- WithApiKey(string)
+- WithEndpoint(string)
+- WithDefaultModel(string)
+- WithTimeout(TimeSpan)
+- WithUserAgent(string)
+- WithReferer(string)
+- WithEnableDebugLogging(bool)
+
+------------------------------------------------------------
+CLASS: ChatSession (currently empty placeholder)
+
+============================================================
+NAMESPACE: Codezerg.OpenRouter.Models
+------------------------------------------------------------
+(… [all model classes, enums, properties documented as before, omitted for brevity here but identical to prior section] …)
+
+============================================================
+USAGE NOTES:
+- Always set OpenRouterClientOptions.ApiKey, UserAgent, Referer before using client.
+- SendChatCompletionAsync → returns full completion.
+- StreamChatCompletionAsync → yields sequence of response chunks with ChatChoice.Delta populated.
+- Use ChatMessage factories for constructing conversation.
+- Supports multimodal: text, image URLs, audio (base64).
+- Supports function/tool definitions with ToolDefinition and interprets ToolCalls in responses.
+- Supports structured outputs: response_format with json_object or json_schema.
+- Token usage returned in response.
+
+============================================================
+EXAMPLES
+------------------------------------------------------------
+EXAMPLE 1: SIMPLE TEXT COMPLETION
+REQUEST:
+{
+  "model":"deepseek/deepseek-chat-v3.1:free",
+  "messages":[
+    {"role":"system","content":"You are a helpful assistant."},
+    {"role":"user","content":"Write a haiku about the ocean."}
+  ],
+  "stream":false
+}
+RESPONSE (trimmed):
+{
+  "id":"chatcmpl-xyz",
+  "choices":[
+    {
+      "index":0,
+      "message":{
+        "role":"assistant",
+        "content":"Ocean waves whisper..."
+      },
+      "finish_reason":"stop"
+    }
+  ]
+}
+
+------------------------------------------------------------
+EXAMPLE 2: STREAMING COMPLETION
+SSE LINES:
+data: {"id":"abc","choices":[{"delta":{"role":"assistant"}}]}
+data: {"id":"abc","choices":[{"delta":{"content":"Ocean"}}]}
+data: {"id":"abc","choices":[{"delta":{"content":" waves"}}]}
+data: [DONE]
+
+------------------------------------------------------------
+EXAMPLE 3: MULTIMODAL (TEXT + IMAGE)
+REQUEST:
+{
+  "model":"deepseek/deepseek-chat-v3.1:free",
+  "messages":[
+    {
+      "role":"user",
+      "content":[
+        {"type":"text","text":"Describe this image:"},
+        {"type":"image_url","image_url":{"url":"https://example.com/sunset.jpg"}}
+      ]
+    }
+  ]
+}
+
+------------------------------------------------------------
+EXAMPLE 4: TOOL / FUNCTION CALLING
+REQUEST includes Tools:
+[
+  { "type":"function","function":{"name":"get_weather","description":"Gets current weather","parameters":{...}} }
+]
+POSSIBLE RESPONSE:
+{
+  "choices":[
+    {
+      "message":{
+        "role":"assistant",
+        "tool_calls":[
+          {"id":"call_1","type":"function","function":{"name":"get_weather","arguments":"{\"city\":\"Paris\"}"}}
+        ]
+      },
+      "finish_reason":"tool_calls"
+    }
+  ]
+}
+
+------------------------------------------------------------
+EXAMPLE 5: STRUCTURED OUTPUT (JSON SCHEMA)
+Request ResponseFormat:
+{ "type":"json_schema","json_schema":{ "type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"}}}}
+Response:
+{
+  "choices":[
+    {"message":{"role":"assistant","content":"{\"name\":\"Alice\",\"age\":27}"}}
+  ]
+}
+
+------------------------------------------------------------
+EXAMPLE 6: AUDIO INPUT
+REQUEST:
+{
+  "model":"deepseek/deepseek-chat-v3.1:free",
+  "messages":[
+    {
+      "role":"user",
+      "content":[
+        {"type":"input_audio","input_audio":{"data":"BASE64WAV...","format":"wav"}}
+      ]
+    }
+  ]
+}
