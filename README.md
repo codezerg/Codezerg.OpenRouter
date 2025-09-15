@@ -68,6 +68,7 @@ await foreach (var chunk in client.StreamChatCompletionAsync(request))
 {
     if (chunk.Choices?.Count > 0)
     {
+        // ⚠️ NOTE: In streaming responses, content comes in Delta, not Message.
         var content = chunk.Choices[0].Delta?.Content;
         if (!string.IsNullOrEmpty(content))
         {
@@ -76,6 +77,10 @@ await foreach (var chunk in client.StreamChatCompletionAsync(request))
     }
 }
 ```
+
+> ⚠️ **Important:** In streaming mode, the generated text is delivered incrementally through  
+> `ChatChoice.Delta.Content`. In non-streaming requests, you access the full text via   
+> `ChatChoice.Message.FirstTextContent`.
 
 ## Multimodal Example (Text + Image)
 
@@ -148,7 +153,7 @@ var cfg = new OpenRouterClientOptions()
 Runnable demos are in the [`/examples`](./examples) folder:
 
 - **Simple Chat**: Make a basic request/response.
-- **Streaming Chat**: Receive a response token-by-token.
+- **Streaming Chat**: Receive a response token-by-token (using `Delta.Content`).
 - **Multimodal Chat**: Combine text + images.
 - **Image Analysis**: Send real world photos to vision models.
 - **Image Generation**: Generate images from text prompts.

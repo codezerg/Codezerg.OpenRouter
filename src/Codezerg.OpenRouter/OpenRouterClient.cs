@@ -123,7 +123,11 @@ public class OpenRouterClient : IDisposable
             content,
             cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"OpenRouter API error ({response.StatusCode}): {errorContent}");
+        }
 
         var responseJson = await response.Content.ReadAsStringAsync();
         var result = JsonConvert.DeserializeObject<ChatResponse>(responseJson);
@@ -169,7 +173,12 @@ public class OpenRouterClient : IDisposable
         };
 
         var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"OpenRouter API error ({response.StatusCode}): {errorContent}");
+        }
 
         using var stream = await response.Content.ReadAsStreamAsync();
         using var reader = new StreamReader(stream);

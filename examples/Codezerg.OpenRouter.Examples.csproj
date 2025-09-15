@@ -8,12 +8,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\src\Codezerg.OpenRouter\Codezerg.OpenRouter.csproj" />
+	  <Compile Remove="Audio\**" />
+	  <EmbeddedResource Remove="Audio\**" />
+	  <None Remove="Audio\**" />
 	</ItemGroup>
 
-
 	<ItemGroup>
-		<Folder Include="Audio\" />
+		<ProjectReference Include="..\src\Codezerg.OpenRouter\Codezerg.OpenRouter.csproj" />
 	</ItemGroup>
 
 </Project>

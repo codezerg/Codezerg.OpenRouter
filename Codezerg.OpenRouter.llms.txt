@@ -19,10 +19,9 @@ METHODS:
 
 BEHAVIOR:
 - Wraps the OpenRouter /chat/completions endpoint.
-- Non‑streaming: returns a complete deserialized ChatResponse.
-- Streaming: yields incremental ChatResponse chunks.
-- Sets required headers (Authorization Bearer ApiKey, User-Agent, HTTP-Referer, Accept=json).
-- Validates configuration.
+- Non‑streaming: returns a complete deserialized ChatResponse with text in `ChatChoice.Message`.
+- Streaming: yields incremental ChatResponse chunks.  
+  ⚠️ In streaming responses, text and tool call data come via `ChatChoice.Delta` (`Delta.Content`, `Delta.ToolCalls`, etc.), not via `Message`.
 
 ------------------------------------------------------------
 CLASS: OpenRouterClientOptions
@@ -126,8 +125,8 @@ CLASS: ChatChoice
 - CompletionFinishReason? FinishReason
 - CompletionFinishReason? NativeFinishReason
 - ApiError? Error
-- ChatMessage? Message
-- ChatDelta? Delta
+- ChatMessage? Message // populated only in non-streaming responses
+- ChatDelta? Delta     // populated incrementally during streaming
 - string? Text
 
 CLASS: ChatDelta
@@ -229,6 +228,7 @@ STREAMING
 ------------------------------------------------------------
 await foreach (var chunk in client.StreamChatCompletionAsync(request))
 {
+    // ⚠️ In streaming, content arrives via Delta.Content, not Message.
     var content = chunk.Choices?[0].Delta?.Content;
     if (!string.IsNullOrEmpty(content))
         Console.Write(content);
@@ -296,6 +296,7 @@ BEST PRACTICES
 - If Model not set → uses DefaultModel.
 - Use builders (ChatMessage.User/AddText/AddImage/AddAudio) to avoid invalid content.
 - Prefer streaming for interactive apps.
+- ⚠️ In streaming responses, read text from `Delta.Content`. In non-streaming responses, use `Message.FirstTextContent`.
 - Handle ToolCalls before proceeding.
 - Use ResponseFormat for structured JSON outputs.
 - Clone configuration for multiple clients with different models.

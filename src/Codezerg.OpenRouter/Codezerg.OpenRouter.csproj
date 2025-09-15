@@ -11,6 +11,8 @@
 		<Authors>Codezerg</Authors>
 		<Company>Codezerg</Company>
 		<Description>A .NET client library for seamless integration with OpenRouter's unified LLM API</Description>
+		<PackageTags>OpenRouter;LLM;ChatGPT;Anthropic;OpenAI;Gemini;Meta;AI</PackageTags>
+		<Summary>.NET Standard client for OpenRouter LLM unified chat API</Summary>
 		<PackageProjectUrl>https://github.com/codezerg/Codezerg.OpenRouter</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/codezerg/Codezerg.OpenRouter</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>

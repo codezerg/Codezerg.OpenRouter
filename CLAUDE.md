@@ -68,7 +68,8 @@ The library follows a modular architecture with clear separation of concerns:
        .AddImage("url");
    ```
 
-2. **Async Streaming**: Uses `IAsyncEnumerable<T>` for token-by-token streaming responses, enabling real-time output processing
+2. **Async Streaming**: Uses `IAsyncEnumerable<T>` for token-by-token streaming responses, enabling real-time output processing.  
+   ⚠️ **Important:** In streaming responses, output is received incrementally in the **`ChatChoice.Delta`** property (`Delta.Content`, `Delta.ToolCalls`, etc.). The **`Message`** property is only populated in *non-streaming* responses.
 
 3. **Custom JSON Converters**: Implements custom converters for complex types (MessageContentConverter, NullableChatRoleConverter) to handle OpenRouter's API response format
 
@@ -76,7 +77,8 @@ The library follows a modular architecture with clear separation of concerns:
 
 1. Client validates configuration and constructs HTTP request with authentication headers
 2. ChatRequest is serialized with proper handling of optional fields and provider-specific options
-3. For streaming: Parses Server-Sent Events (SSE) and yields ChatResponse chunks
+3. For streaming: Parses Server-Sent Events (SSE) and yields ChatResponse chunks  
+   ⚠️ Use `ChatChoice.Delta.Content`, not `ChatChoice.Message`, when handling streaming chunks.
 4. For non-streaming: Deserializes complete response with error handling
 
 ### Model Organization
@@ -108,3 +110,4 @@ When modifying the codebase:
 4. Ensure all public APIs have XML documentation comments
 5. Keep the streaming implementation using IAsyncEnumerable for modern async patterns
 6. Test multimodal features with appropriate vision-capable models (e.g., Gemini, GPT-4o)
+7. **Always document clearly**: Streaming responses use `Delta.Content`; non-streaming uses `Message.FirstTextContent`.
