@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
 using Codezerg.OpenRouter.Examples.Chat;
+using Codezerg.OpenRouter.Examples.Frontend;
 using Codezerg.OpenRouter.Examples.Image;
 
 namespace Codezerg.OpenRouter.Examples;
@@ -57,8 +58,10 @@ class Program
             //("Simple Chat", "Basic chat completion example", SimpleChatExample.RunAsync),
             //("Streaming Chat", "Chat with streaming response", StreamingChatExample.RunAsync),
             //("Multimodal Chat", "Chat with images", MultimodalChatExample.RunAsync),
-            ("Image Analysis", "Analyze local or remote images", ImageAnalysisExample.RunAsync),
-            //("Image Generation", "Generate images using AI", ImageGenerationExample.RunAsync)
+            //("Image Analysis", "Analyze local or remote images", ImageAnalysisExample.RunAsync),
+            //("Image Generation", "Generate images using AI", ImageGenerationExample.RunAsync),
+            ("Model Explorer", "Explore and compare models using frontend API", ModelExplorerExample.RunAsync),
+            ("Frontend API Demo", "Full frontend API demonstration", async (cfg) => await FrontendApiExample.RunAsync())
         };
 
         Console.WriteLine("\n========================================");
