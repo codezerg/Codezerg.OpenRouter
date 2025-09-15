@@ -60,8 +60,10 @@ class Program
             //("Multimodal Chat", "Chat with images", MultimodalChatExample.RunAsync),
             //("Image Analysis", "Analyze local or remote images", ImageAnalysisExample.RunAsync),
             //("Image Generation", "Generate images using AI", ImageGenerationExample.RunAsync),
-            ("Model Explorer", "Explore and compare models using frontend API", ModelExplorerExample.RunAsync),
-            ("Frontend API Demo", "Full frontend API demonstration", async (cfg) => await FrontendApiExample.RunAsync())
+            //("Model Explorer", "Explore and compare models using frontend API", ModelExplorerExample.RunAsync),
+            //("Frontend API Demo", "Full frontend API demonstration", async (cfg) => await FrontendApiExample.RunAsync()),
+            //("API Endpoints Demo", "Demonstrate various OpenRouter API endpoints", async (cfg) => await ApiEndpointsExample.RunAsync()),
+            ("Cost calculation Demo", "Demonstrating cost calculation for OpenRouter API usage", async (cfg) => await CostCalculationExample.RunAsync()),
         };
 
         Console.WriteLine("\n========================================");

@@ -1,302 +1,223 @@
 LIBRARY: Codezerg.OpenRouter
 LANGUAGE: C#
 TARGET_FRAMEWORK: netstandard2.0
-DESCRIPTION: A .NET client for interacting with the OpenRouter LLM API (chat completions, streaming, structured outputs, tool calls, multimodal data).
+DESCRIPTION: Full reference for strongly‑typed .NET client to OpenRouter’s LLM API.
 
-============================================================
+================================================
 NAMESPACE: Codezerg.OpenRouter
-------------------------------------------------------------
+------------------------------------------------
 CLASS: OpenRouterClient : IDisposable
-CONSTRUCTORS:
-- OpenRouterClient(OpenRouterClientOptions config)
-- OpenRouterClient(OpenRouterClientOptions config, HttpClient? client)
-PROPERTY:
-- OpenRouterClientOptions Configuration { get; }
-METHODS:
-- Task<ChatResponse> SendChatCompletionAsync(ChatRequest request, CancellationToken cancellationToken=default)
-- IAsyncEnumerable<ChatResponse> StreamChatCompletionAsync(ChatRequest request, CancellationToken cancellationToken=default)
-- void Dispose()
+  CTORS:
+    - OpenRouterClient(OpenRouterClientOptions opts)
+    - OpenRouterClient(OpenRouterClientOptions opts, HttpClient? client)
+  PROPERTY:
+    - Configuration : OpenRouterClientOptions (clone, immutable)
+  METHODS:
+    - Task<ChatResponse> SendChatCompletionAsync(ChatRequest req,CancellationToken ct=default)
+    - IAsyncEnumerable<ChatResponse> StreamChatCompletionAsync(ChatRequest req,CancellationToken ct=default)
+    - Task<List<Activity>> GetActivityAsync(string? date=null,CancellationToken ct=default)
+    - Task<Credits> GetCreditsAsync(CancellationToken ct=default)
+    - Task<List<ProviderInfo>> GetProvidersAsync(CancellationToken ct=default)
+    - Task<List<ModelInfo>> GetModelsAsync(string? category=null,CancellationToken ct=default)
+    - Task<List<ModelInfo>> GetUserModelsAsync(CancellationToken ct=default)
+    - Task<ModelEndpoints> GetModelEndpointsAsync(string author,string slug,CancellationToken ct=default)
+    - Task<GenerationDetails> GetGenerationAsync(string id,CancellationToken ct=default)
+    - void Dispose()
 
-BEHAVIOR:
-- Wraps the OpenRouter /chat/completions endpoint.
-- Non‑streaming: returns a complete deserialized ChatResponse with text in `ChatChoice.Message`.
-- Streaming: yields incremental ChatResponse chunks.  
-  ⚠️ In streaming responses, text and tool call data come via `ChatChoice.Delta` (`Delta.Content`, `Delta.ToolCalls`, etc.), not via `Message`.
-
-------------------------------------------------------------
 CLASS: OpenRouterClientOptions
-PROPERTIES:
-- string ApiKey
-- string Endpoint = "https://openrouter.ai/api/v1"
-- string DefaultModel = "deepseek/deepseek-chat-v3.1:free"
-- TimeSpan Timeout = 100s
-- string UserAgent
-- string Referer
-- bool EnableDebugLogging
+  ApiKey, Endpoint, DefaultModel, Timeout, UserAgent, Referer, EnableDebugLogging
 
-------------------------------------------------------------
 STATIC CLASS: OpenRouterClientOptionsExtensions
-METHODS:
-- void Validate(OpenRouterClientOptions) // requires ApiKey, Endpoint, DefaultModel not empty
-- OpenRouterClientOptions Clone(OpenRouterClientOptions)
-- WithApiKey(string)
-- WithEndpoint(string)
-- WithDefaultModel(string)
-- WithTimeout(TimeSpan)
-- WithUserAgent(string)
-- WithReferer(string)
-- WithEnableDebugLogging(bool)
+  - Validate()
+  - Clone()
+  - WithApiKey,WithEndpoint,WithDefaultModel,WithTimeout,WithUserAgent,WithReferer,WithEnableDebugLogging
 
-============================================================
+CLASS: OpenRouterFrontendClient (experimental, private API discovery)
+  - GetProvidersAsync(), GetModelsAsync(), FindModelsAsync(), GetModelStatsAsync()
+  - GetModelsByProviderAsync(), GetModelsByModalityAsync()
+  - GetReasoningModelsAsync(), GetFreeModelsAsync()
+  - GetByokProvidersAsync(), GetPrivacyFriendlyProvidersAsync()
+
+================================================
 NAMESPACE: Codezerg.OpenRouter.Models
-------------------------------------------------------------
+------------------------------------------------
+RESPONSE WRAPPERS:
+- ActivityResponse { Data: List<Activity> }
+- CreditsResponse { Data: Credits }
+- ProvidersResponse { Data: List<ProviderInfo> }
+- ModelsResponse { Data: List<ModelInfo> }
+- ModelEndpointsResponse { Data: ModelEndpoints }
+- GenerationDetailsResponse { Data: GenerationDetails }
+
+------------------------------------------------
+CLASS: Activity
+  - Date, Model, ModelPermaslug, EndpointId, ProviderName
+  - Usage, ByokUsageInference
+  - Requests, PromptTokens, CompletionTokens, ReasoningTokens
+
+CLASS: Credits
+  - TotalCredits, TotalUsage
+
+CLASS: ProviderInfo
+  - Name, Slug, PrivacyPolicyUrl, TermsOfServiceUrl, StatusPageUrl
+
+CLASS: ModelInfo
+  - Id, Name, Created, Description
+  - Architecture: ModelArchitecture { InputModalities[], OutputModalities[], Tokenizer, InstructType }
+  - TopProvider: TopProviderInfo { IsModerated, ContextLength?, MaxCompletionTokens? }
+  - Pricing: ModelPricing { Prompt, Completion, Image, Request, WebSearch, InternalReasoning, InputCacheRead, InputCacheWrite }
+  - CanonicalSlug, ContextLength, HuggingFaceId
+  - PerRequestLimits: dict, SupportedParameters
+
+CLASS: ModelEndpoints
+  - Id, Name, Created, Description?, Architecture?, Endpoints: List<EndpointInfo>
+  CLASS EndpointInfo { Name, ContextLength?, Pricing?, ProviderName?, SupportedParameters[], Quantization?, MaxCompletionTokens?, MaxPromptTokens?, Status?, UptimeLast30m? }
+  CLASS EndpointPricing { Request?, Image?, Prompt?, Completion? }
+
+CLASS: GenerationDetails
+  - Id, TotalCost, CreatedAt, Model, Origin?, Usage, IsByok
+  - UpstreamId?, CacheDiscount?, UpstreamInferenceCost, AppId?, Streamed, Cancelled
+  - ProviderName?, Latency, ModerationLatency?, GenerationTime
+  - FinishReason?, NativeFinishReason?
+  - TokensPrompt, TokensCompletion, NativeTokensPrompt, NativeTokensCompletion, NativeTokensReasoning
+  - NumMediaPrompt?, NumMediaCompletion, NumSearchResults?
+  - NativeTokensCached?, NativeTokensCompletionImages?
+  - ExternalUser?, ApiType?
+
+------------------------------------------------
 CLASS: ChatMessage
-- Role: ChatRole
-- Content: List<MessagePart> (string OR array, uses MessageContentConverter).
-- Name: string?
-- ToolCalls: List<ToolCall>?
-- ToolCallId: string?
-- Images: List<GeneratedImage>?
-FACTORY METHODS:
-- User(string|MessagePart[])
-- Assistant(string|MessagePart[])
-- System(string|MessagePart[])
-- Tool(string content,string toolCallId)
-BUILDER METHODS:
-- WithName(string)
-- WithToolCalls(ToolCall[])
-- WithImages(GeneratedImage[])
-- AddText(string)
-- AddImage(string url,string? detail=null)
-- AddAudio(string base64,string format="wav")
-HELPERS (JsonIgnore):
-- FirstTextContent : string? (first text segment or null)
-- CombinedTextContent : string (all texts joined by space)
-- HasImages, HasAudio, IsMultimodal, IsToolResponse, HasToolCalls
+  - Role: ChatRole
+  - Content: List<MessagePart> (converter supports string or array)
+  - Name?, ToolCalls?, ToolCallId?, Images?
+  FACTORY METHODS: User(), Assistant(), System(), Tool()
+  BUILDERS: WithName(), WithToolCalls(), WithImages(), AddText(), AddImage(), AddAudio()
+  HELPERS (JsonIgnore): FirstTextContent, CombinedTextContent, HasImages, HasAudio, IsMultimodal, IsToolResponse, HasToolCalls
 
-------------------------------------------------------------
 CLASS: ChatRequest
-PROPERTIES:
-- List<ChatMessage>? Messages
-- string? Prompt
-- string? Model
-- ResponseFormatOptions? ResponseFormat
-- object? Stop
-- bool? Stream
-- int? MaxTokens
-- double? Temperature
-- List<ToolDefinition>? Tools
-- object? ToolChoice
-- int? Seed
-- double? TopP
-- int? TopK
-- double? FrequencyPenalty
-- double? PresencePenalty
-- double? RepetitionPenalty
-- Dictionary<int,double>? LogitBias
-- bool? Logprobs
-- int? TopLogprobs
-- double? MinP
-- double? TopA
-- PredictionOptions? Prediction
-- List<string>? Transforms
-- List<string>? Models
-- string? Route
-- ProviderOptions? Provider
-- string? User
-- List<Modality>? Modalities
-- bool? ParallelToolCalls
-- VerbosityLevel? Verbosity
+  - Messages?, Prompt?, Model?, ResponseFormat?, Stop?, Stream?, MaxTokens?
+  - Temperature?, TopP?, TopK?, Seed?, FrequencyPenalty?, PresencePenalty?, RepetitionPenalty?
+  - LogitBias?, Logprobs?, TopLogprobs?, MinP?, TopA?
+  - Prediction?, Transforms?, Models?, Route?, Provider?, User?, Modalities?, ParallelToolCalls?, Verbosity?
 
-------------------------------------------------------------
 CLASS: ChatResponse
-PROPERTIES:
-- string Id
-- List<ChatChoice> Choices
-- long Created
-- string Model
-- ObjectType Object
-- string? SystemFingerprint
-- TokenUsage? Usage
-- ApiError? Error
+  - Id, Choices: List<ChatChoice>, Created, Model, Object:ObjectType, SystemFingerprint?, Usage?, Error?
 
 CLASS: ChatChoice
-- int Index
-- CompletionFinishReason? FinishReason
-- CompletionFinishReason? NativeFinishReason
-- ApiError? Error
-- ChatMessage? Message // populated only in non-streaming responses
-- ChatDelta? Delta     // populated incrementally during streaming
-- string? Text
+  - Index, FinishReason?, NativeFinishReason?, Error?
+  - Message: ChatMessage? (non‑stream)
+  - Delta: ChatDelta? (streaming, incremental)
+  - Text?
 
-CLASS: ChatDelta
-- string? Content
-- ChatRole? Role
-- List<ToolCall>? ToolCalls
-- List<GeneratedImage>? Images
+CLASS: ChatDelta { Content?, Role?, ToolCalls[], Images[] }
+CLASS: TokenUsage { PromptTokens, CompletionTokens, TotalTokens, CacheCreationInputTokens?, CacheReadInputTokens? }
 
-CLASS: TokenUsage
-- int PromptTokens
-- int CompletionTokens
-- int TotalTokens
-- int? CacheCreationInputTokens
-- int? CacheReadInputTokens
+------------------------------------------------
+ERROR MODEL:
+- ApiError { Code:int, Message:string, Metadata? }
+- ModerationErrorDetails { Reasons[], FlaggedInput, ProviderName, ModelSlug }
+- ProviderErrorDetails { ProviderName, Raw? }
 
-------------------------------------------------------------
-CLASS: ApiError
-- int Code
-- string Message
-- Dictionary<string,object>? Metadata
-CLASS: ModerationErrorDetails
-- List<string> Reasons
-- string FlaggedInput
-- string ProviderName
-- string ModelSlug
-CLASS: ProviderErrorDetails
-- string ProviderName
-- object? Raw
+------------------------------------------------
+CONTENT PARTS:
+CLASS: MessagePart { Type:MessageContentType, Text?, ImageUrl?, InputAudio? }
+  FACTORY: CreateText(), CreateImage(url,detail?), CreateAudio(data,format)
+  HELPERS: IsText, IsImage, IsAudio
+CLASS: ImageReference { Url, Detail? }
+CLASS: AudioContent { Data, Format="wav" }
+CLASS: GeneratedImage { Type="image_url", ImageUrl:GeneratedImageReference }
+CLASS: GeneratedImageReference { Url }
 
-------------------------------------------------------------
-CLASS: MessagePart
-- Type: MessageContentType
-- Text: string?
-- ImageUrl: ImageReference?
-- InputAudio: AudioContent?
-FACTORIES:
-- CreateText(string)
-- CreateImage(string url,string? detail=null)
-- CreateAudio(string base64,string format="wav")
-HELPERS:
-- IsText, IsImage, IsAudio
-CLASS: ImageReference { string Url, string? Detail }
-CLASS: AudioContent { string Data, string Format="wav" }
+------------------------------------------------
+TOOL SYSTEM:
+CLASS: ToolDefinition { Type=ToolType, Function:FunctionDescription }
+CLASS: FunctionDescription { Name, Description?, Parameters:JObject? }
+CLASS: ToolCall { Id, Type, Function(FunctionCall { Name, Arguments }) }
+CLASS: ToolChoice { Type, Function:ToolChoiceDetails{Name} }
 
-------------------------------------------------------------
-CLASS: GeneratedImage { string Type="image_url"; GeneratedImageReference ImageUrl }
-CLASS: GeneratedImageReference { string Url }
+------------------------------------------------
+CONFIG / ROUTING:
+CLASS: ProviderOptions { AllowFallbacks?, RequireParameters?, DataCollection?, Order[], Ignore[], Allow[], Block[] }
+CLASS: ResponseFormatOptions { Type:ResponseFormatType, JsonSchema? }
+CLASS: PredictionOptions { Type=PredictionType.Content, Content:string }
 
-------------------------------------------------------------
-CLASS: ToolDefinition { ToolType Type=Function; FunctionDescription Function }
-CLASS: FunctionDescription { string Name; string? Description; JObject? Parameters }
-CLASS: ToolCall { string Id; ToolType Type; FunctionCall Function }
-CLASS: FunctionCall { string Name; string Arguments }
-CLASS: ToolChoice { ToolType Type; ToolChoiceDetails Function }
-CLASS: ToolChoiceDetails { string Name }
+------------------------------------------------
+ENUM-LIKE RECORDS:
+- ChatRole (system,user,assistant,tool)
+- CompletionFinishReason (stop,length,tool_calls,content_filter,error)
+- MessageContentType (text,image_url,input_audio)
+- Modality (text,image,audio)
+- ResponseFormatType (json_object,json_schema,content)
+- ToolType (function)
+- DataCollectionOption (allow,deny)
+- PredictionType (content)
+- VerbosityLevel (low,medium,high)
+- ObjectType ("chat.completion", "chat.completion.chunk")
 
-------------------------------------------------------------
-CLASS: ProviderOptions
-- bool? AllowFallbacks
-- bool? RequireParameters
-- DataCollectionOption? DataCollection
-- List<string>? Order
-- List<string>? Ignore
-- List<string>? Allow
-- List<string>? Block
+================================================
+NAMESPACE: Codezerg.OpenRouter.Frontend  (Experimental API DTOs)
+------------------------------------------------
+CLASS: FrontendModel { Slug,HfSlug,Name,ShortName,Author,Description,ContextLength,InputModalities[],OutputModalities[],HasTextOutput,Group,InstructType,DefaultSystem,DefaultStops[],Hidden,Permaslug,ReasoningConfig?, Endpoint? }
+CLASS: ReasoningConfig { StartToken, EndToken, SystemPrompt }
+CLASS: ModelEndpoint { Id,Name,ContextLength,ModelVariantSlug,ModelVariantPermaslug,ProviderName,ProviderSlug,Pricing,VariablePricings[],SupportedParameters[],IsFree,CanAbort,MaxPromptTokens?,MaxCompletionTokens?,SupportsReasoning,SupportsMultipart,SupportsToolParameters,LimitRpm?,LimitRpd?,Stats?,Features? }
+CLASS: ModelPricing { Prompt,Completion,Image,Request,WebSearch,InternalReasoning,ImageOutput }
+CLASS: VariablePricing { Type,Threshold,Request }
+CLASS: ModelStats { EndpointId,P50Throughput,P50Latency,RequestCount }
+CLASS: ModelFeatures { SupportsToolChoice, ReasoningConfig }
+CLASS: ToolChoiceSupport { LiteralNone, LiteralAuto, LiteralRequired, TypeFunction }
 
-CLASS: ResponseFormatOptions { ResponseFormatType Type=JsonObject; object? JsonSchema }
-CLASS: PredictionOptions { PredictionType Type=Content; string Content }
+CLASS: FrontendModelResponse { Data: object (either array of FrontendModel or FrontendModelData) }
+CLASS: FrontendModelData { Models: List<FrontendModel> }
+CLASS: FrontendModelStatsResponse { Data: List<ModelEndpointStats> }
+CLASS: ModelEndpointStats : ModelEndpoint { Model:FrontendModel, ProviderInfo:FrontendProvider, DataPolicy }
 
-------------------------------------------------------------
-ENUM-LIKE RECORDS (struct wrappers with converters)
-- ChatRole ("system","user","assistant","tool")
-- CompletionFinishReason ("stop","length","tool_calls","content_filter","error")
-- MessageContentType ("text","image_url","input_audio")
-- Modality ("text","image","audio")
-- ResponseFormatType ("json_object","json_schema","content")
-- ToolType ("function")
-- DataCollectionOption ("allow","deny")
-- PredictionType ("content")
-- VerbosityLevel ("low","medium","high")
+CLASS: FrontendProvider { Name, DisplayName, Slug, BaseUrl, DataPolicy, Headquarters, Datacenters[], HasChatCompletions, HasCompletions, IsAbortable, ModerationRequired, AdapterName, IsMultipartSupported, StatusPageUrl, ByokEnabled, Icon, IgnoredProviderModels[] }
+CLASS: DataPolicy { Training, RetainsPrompts, RetentionDays?, CanPublish, TermsOfServiceUrl, PrivacyPolicyUrl, RequiresUserIds? }
+CLASS: ProviderIcon { Url, ClassName }
+CLASS: FrontendProviderResponse { Data: List<FrontendProvider> }
 
-============================================================
-USAGE EXAMPLES (C#)
+================================================
+USAGE EXAMPLES:
 
-TEXT COMPLETION
-------------------------------------------------------------
-var request = new ChatRequest
-{
-    Messages = new()
-    {
-        ChatMessage.System("You are a helpful assistant."),
-        ChatMessage.User("What is the capital of France?")
-    }
-};
-var response = await client.SendChatCompletionAsync(request);
-Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+CHAT (non‑stream):
+var req = new ChatRequest{ Messages=new(){ ChatMessage.User("Capital of France?") }};
+var resp = await client.SendChatCompletionAsync(req);
+Console.WriteLine(resp.Choices[0].Message?.FirstTextContent);
 
-STREAMING
-------------------------------------------------------------
-await foreach (var chunk in client.StreamChatCompletionAsync(request))
-{
-    // ⚠️ In streaming, content arrives via Delta.Content, not Message.
-    var content = chunk.Choices?[0].Delta?.Content;
-    if (!string.IsNullOrEmpty(content))
-        Console.Write(content);
+STREAMING TEXT:
+await foreach(var chunk in client.StreamChatCompletionAsync(req)){
+ var token = chunk.Choices[0].Delta?.Content;
+ if(!string.IsNullOrEmpty(token)) Console.Write(token);
 }
 
-MULTIMODAL (TEXT + IMAGE)
-------------------------------------------------------------
-var message = new ChatMessage(ChatRole.User)
-    .AddText("What do you see?")
-    .AddImage("https://example.com/picture.jpg");
-var request = new ChatRequest { Messages = new() { message } };
-var response = await client.SendChatCompletionAsync(request);
-Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
-
-AUDIO INPUT
-------------------------------------------------------------
-var audioMessage = new ChatMessage(ChatRole.User)
-    .AddAudio(Convert.ToBase64String(File.ReadAllBytes("speech.wav")));
-var request = new ChatRequest { Messages = new() { audioMessage } };
-var response = await client.SendChatCompletionAsync(request);
-Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
-
-TOOL CALLING
-------------------------------------------------------------
-var request = new ChatRequest
-{
-    Messages = new() { ChatMessage.User("What's the weather in Paris?") },
-    Tools = new()
-    {
-        new ToolDefinition
-        {
-            Function = new FunctionDescription
-            {
-                Name="get_weather",
-                Description="Gets weather",
-                Parameters=JObject.Parse("{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}")
-            }
-        }
-    }
-};
-var resp = await client.SendChatCompletionAsync(request);
-if (resp.Choices[0].Message?.ToolCalls?.Count>0)
-{
-    var call=resp.Choices[0].Message.ToolCalls[0];
-    Console.WriteLine($"{call.Function.Name}({call.Function.Arguments})");
+STREAMING TOOL CALL:
+await foreach(var chunk in client.StreamChatCompletionAsync(req)){
+ if(chunk.Choices[0].Delta?.ToolCalls?.Count > 0){
+    foreach(var call in chunk.Choices[0].Delta.ToolCalls)
+       Console.WriteLine($"ToolCall: {call.Function.Name} {call.Function.Arguments}");
+ }
 }
 
-STRUCTURED OUTPUT (JSON SCHEMA)
-------------------------------------------------------------
-var request = new ChatRequest
-{
-    Messages = new(){ChatMessage.User("Generate name and age")},
-    ResponseFormat = new ResponseFormatOptions
-    {
-        Type = ResponseFormatType.JsonSchema,
-        JsonSchema = new { type="object", properties=new{ name=new{type="string"}, age=new{type="integer"} } }
-    }
-};
-var response = await client.SendChatCompletionAsync(request);
-Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+MULTIMODAL:
+var msg=new ChatMessage(ChatRole.User).AddText("Describe this").AddImage("https://example.com/cat.jpg");
+var resp=await client.SendChatCompletionAsync(new ChatRequest{Messages=new(){msg}});
+Console.WriteLine(resp.Choices[0].Message?.FirstTextContent);
 
-============================================================
-BEST PRACTICES
-- Always set ApiKey, UserAgent, Referer in OpenRouterClientOptions.
-- If Model not set → uses DefaultModel.
-- Use builders (ChatMessage.User/AddText/AddImage/AddAudio) to avoid invalid content.
-- Prefer streaming for interactive apps.
-- ⚠️ In streaming responses, read text from `Delta.Content`. In non-streaming responses, use `Message.FirstTextContent`.
-- Handle ToolCalls before proceeding.
-- Use ResponseFormat for structured JSON outputs.
-- Clone configuration for multiple clients with different models.
+STRUCTURED JSON OUTPUT:
+var req=new ChatRequest{
+ Messages=new(){ChatMessage.User("Generate name and age")},
+ ResponseFormat=new ResponseFormatOptions{Type=ResponseFormatType.JsonSchema,JsonSchema=new{type="object",properties=new{name=new{type="string"},age=new{type="integer"}}}}};
+var resp=await client.SendChatCompletionAsync(req);
+Console.WriteLine(resp.Choices[0].Message?.FirstTextContent);
+
+================================================
+BEST PRACTICES:
+- Set ApiKey, UserAgent, Referer in options (required by OpenRouter).  
+- If no Model specified → DefaultModel is used.  
+- Builders (AddText/AddImage/AddAudio) ensure valid multimodal message parts.  
+- Streaming vs Non‑streaming difference: Delta vs Message.  
+- Handle ToolCalls before continuing conversation.  
+- Use ResponseFormatOptions for schema-enforced JSON outputs.  
+- `Configuration` is immutable → prepare via *With* extensions before constructing client.  
+- For large/multi‑user apps, clone options for variations per client.  
+- Expect ApiError at root response or inside choices.  
+- Treat OpenRouterFrontendClient as experimental/private.

@@ -1,113 +1,193 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to **Claude Code** (`claude.ai/code`) when working with code in this repository.
+
+---
 
 ## Project Overview
 
-Codezerg.OpenRouter is a .NET Standard 2.0 client library for OpenRouter's unified LLM API, enabling access to multiple AI models (OpenAI, Anthropic, Google, Meta) through a single interface. The library provides streaming support, multimodal capabilities, and type-safe request/response models.
+**Codezerg.OpenRouter** is a **.NET Standard 2.0 client library** for OpenRouter's unified LLM API.  
+It includes:
+
+- **Chat Completions** with multiple models (OpenAI, Anthropic, Google, Meta, etc.).  
+- Strongly typed request/response models (`ChatRequest`, `ChatResponse`, etc.).  
+- **Streaming API** with `IAsyncEnumerable<ChatResponse>`.  
+- **Multimodal** messaging (text, images, audio).  
+- **Frontend API client** for providers/models (`OpenRouterFrontendClient`).  
+- **Account APIs**: usage activity, credits, owned models.  
+- **Discovery APIs**: providers, models, endpoints, generation history.  
+- Fully compatible with **.NET Framework 4.6.2+, .NET Core, .NET 5, 6, 7, 8**.
+
+---
 
 ## Build and Development Commands
 
-### Building the Solution
+### Build
 ```bash
-# Build entire solution
 dotnet build
-
-# Build release configuration
 dotnet build -c Release
-
-# Build specific project
 dotnet build src/Codezerg.OpenRouter/Codezerg.OpenRouter.csproj
 ```
 
-### Running Examples
+### Run Examples
 ```bash
-# Set API key (required)
-# Windows PowerShell:
+# PowerShell
 $env:OPENROUTER_API_KEY="your-api-key"
-# Linux/Mac:
+# Linux/macOS
 export OPENROUTER_API_KEY="your-api-key"
 
-# Run examples
 dotnet run --project examples/Codezerg.OpenRouter.Examples.csproj
 ```
 
-### Testing
+### Tests
 ```bash
-# Run all tests (when test project is added)
 dotnet test
-
-# Run with verbosity
 dotnet test --logger "console;verbosity=detailed"
 ```
 
-### Package Management
+### Pack NuGet
 ```bash
-# Create NuGet package
 dotnet pack src/Codezerg.OpenRouter/Codezerg.OpenRouter.csproj -c Release
-
-# Restore dependencies
-dotnet restore
 ```
 
-## Architecture and Key Components
+---
 
-### Core Client Structure
-The library follows a modular architecture with clear separation of concerns:
+## Key Classes
 
-- **OpenRouterClient** (`src/Codezerg.OpenRouter/OpenRouterClient.cs`): Main client class handling HTTP communication, request serialization, and response streaming
-- **OpenRouterClientOptions** (`src/Codezerg.OpenRouter/OpenRouterClientOptions.cs`): Configuration class for API keys, timeouts, default headers, and model selection
-- **Models namespace** (`src/Codezerg.OpenRouter/Models/`): Contains all request/response DTOs and enums
+### `OpenRouterClient`
+High‑level API client for OpenRouter LLM and account APIs.  
+- `SendChatCompletionAsync(ChatRequest)` → non‑streaming response.  
+- `StreamChatCompletionAsync(ChatRequest)` → streaming SSE response.  
+- `GetActivityAsync(date?)` → recent usage grouped by endpoint.  
+- `GetCreditsAsync()` → total purchased vs used.  
+- `GetProvidersAsync()` → list of API providers.  
+- `GetModelsAsync(category?)` → all models.  
+- `GetUserModelsAsync()` → user‑filtered models.  
+- `GetModelEndpointsAsync(author, slug)` → all endpoints of model.  
+- `GetGenerationAsync(id)` → past generation details.  
 
-### Key Design Patterns
+### `OpenRouterFrontendClient`
+Shell around undocumented **frontend/private APIs**:
+- Discover `Providers`, `Models`, `Reasoning` models, `Free` models.  
+- Filter by provider, modality.  
+- Privacy‑friendly and BYOK providers.  
+⚠️ Considered experimental.
 
-1. **Fluent Builder Pattern**: ChatMessage uses fluent methods for multimodal content construction:
-   ```csharp
-   var message = new ChatMessage(ChatRole.User)
-       .AddText("Analyze this")
-       .AddImage("url");
-   ```
+### `OpenRouterClientOptions` & Extensions
+Holds config:
+- `ApiKey`, `Endpoint`, `DefaultModel`  
+- `Timeout`, `UserAgent`, `Referer`, `EnableDebugLogging`  
+Extensions add `.WithApiKey(...)`, `.WithDefaultModel(...)`, `.Validate()`, `.Clone()`.
 
-2. **Async Streaming**: Uses `IAsyncEnumerable<T>` for token-by-token streaming responses, enabling real-time output processing.  
-   ⚠️ **Important:** In streaming responses, output is received incrementally in the **`ChatChoice.Delta`** property (`Delta.Content`, `Delta.ToolCalls`, etc.). The **`Message`** property is only populated in *non-streaming* responses.
+### Models Namespace
+- **Core chat**: `ChatRequest`, `ChatResponse`, `ChatMessage`  
+- **Chat parts**: `MessagePart`, `ImageReference`, `AudioContent`  
+- **Usage/Accounting**: `TokenUsage`, `Activity`, `Credits`, `GenerationDetails`  
+- **Discovery**: `ProviderInfo`, `ModelInfo`, `ModelEndpoints`  
+- **Tooling**: `ToolDefinition`, `ToolCall`, `FunctionDescription`  
+- **Structured output**: `ResponseFormatOptions`, `ResponseFormatType`  
+- **Enums**: `ChatRole`, `CompletionFinishReason`, `Modality`, `VerbosityLevel`  
 
-3. **Custom JSON Converters**: Implements custom converters for complex types (MessageContentConverter, NullableChatRoleConverter) to handle OpenRouter's API response format
+---
 
-### Request/Response Flow
+## Design Principles
 
-1. Client validates configuration and constructs HTTP request with authentication headers
-2. ChatRequest is serialized with proper handling of optional fields and provider-specific options
-3. For streaming: Parses Server-Sent Events (SSE) and yields ChatResponse chunks  
-   ⚠️ Use `ChatChoice.Delta.Content`, not `ChatChoice.Message`, when handling streaming chunks.
-4. For non-streaming: Deserializes complete response with error handling
+1. **Strong typing** over dynamic JSON.  
+2. **Builder pattern** for complex multimodal messages.  
+3. **Async Streaming** with `IAsyncEnumerable`.  
+   - ⚠️ Streaming data is in `ChatChoice.Delta.Content`.  
+   - Non‑streaming data is in `ChatChoice.Message.FirstTextContent`.  
+4. **Immutable Config**: clone options on construction.  
+5. **Undocumented APIs** (`FrontendClient`) are loosely typed.
 
-### Model Organization
+---
 
-- **ChatMessage**: Supports multiple content types (text, image, audio) through MessagePart collection
-- **ChatRequest**: Configurable with model selection, temperature, streaming options, and provider-specific settings
-- **ChatResponse**: Handles both complete responses and streaming deltas with usage statistics
+## Example Usage
 
-## Project Structure
-
+### Standard Chat
+```csharp
+var req = new ChatRequest {
+    Messages = new() {
+        ChatMessage.System("You are a helpful assistant."),
+        ChatMessage.User("What is the capital of France?")
+    }
+};
+var resp = await client.SendChatCompletionAsync(req);
+Console.WriteLine(resp.Choices[0].Message?.FirstTextContent);
 ```
-/
-├── src/
-│   └── Codezerg.OpenRouter/       # Main library project
-│       ├── Models/                 # Request/response models and enums
-│       ├── OpenRouterClient.cs     # Core client implementation
-│       └── *.cs                    # Supporting classes
-├── examples/                       # Runnable examples demonstrating features
-└── Codezerg.OpenRouter.sln        # Solution file
+
+### Streaming
+```csharp
+await foreach (var chunk in client.StreamChatCompletionAsync(req))
+{
+    var token = chunk.Choices?[0].Delta?.Content;
+    if (!string.IsNullOrEmpty(token))
+        Console.Write(token);
+}
 ```
+
+### Multimodal (Text + Image)
+```csharp
+var msg = new ChatMessage(ChatRole.User)
+    .AddText("Describe this picture:")
+    .AddImage("https://example.com/cat.jpg");
+
+var resp = await client.SendChatCompletionAsync(new ChatRequest { Messages = new(){ msg } });
+Console.WriteLine(resp.Choices[0].Message?.FirstTextContent);
+```
+
+### Account & Usage
+```csharp
+var credits = await client.GetCreditsAsync();
+Console.WriteLine($"Credits: {credits.TotalCredits}, Used: {credits.TotalUsage}");
+
+var activity = await client.GetActivityAsync();
+foreach (var day in activity)
+    Console.WriteLine($"{day.Date}: {day.Model} - {day.Requests} requests");
+```
+
+### Providers / Models
+```csharp
+var providers = await client.GetProvidersAsync();
+foreach (var p in providers)
+    Console.WriteLine($"{p.Name} ({p.PrivacyPolicyUrl})");
+
+var models = await client.GetModelsAsync();
+foreach (var m in models)
+    Console.WriteLine($"{m.Name}  ({m.Id})");
+```
+
+### Generation Details
+```csharp
+var gen = await client.GetGenerationAsync("generation-id");
+Console.WriteLine($"Model: {gen.Model}, Cost: {gen.TotalCost}, Tokens: {gen.TokensCompletion}");
+```
+
+---
 
 ## Development Guidelines
 
-When modifying the codebase:
+- Target `.NET Standard 2.0` for broad compatibility.  
+- Use `async/await` with `.ConfigureAwait(false)` inside library code.  
+- Add XML doc comments for all public types.  
+- Ensure streaming logic discards `[DONE]` SSE marker.  
+- Preserve model schema (`ChatMessage`, `MessagePart`) because OpenRouter uses varying structures (`string` vs `array`).  
+- Treat `FrontendClient` as experimental (API shape may break).  
 
-1. Maintain .NET Standard 2.0 compatibility for broad framework support
-2. Preserve nullable reference type annotations for API clarity
-3. Follow existing async/await patterns and use ConfigureAwait(false) in library code
-4. Ensure all public APIs have XML documentation comments
-5. Keep the streaming implementation using IAsyncEnumerable for modern async patterns
-6. Test multimodal features with appropriate vision-capable models (e.g., Gemini, GPT-4o)
-7. **Always document clearly**: Streaming responses use `Delta.Content`; non-streaming uses `Message.FirstTextContent`.
+---
+
+## Project Layout
+
+```
+/
+├── src/Codezerg.OpenRouter/
+│   ├── Models/                  # DTOs and enums for requests/responses
+│   ├── OpenRouterClient.cs      # Core API client (chat, activity, credits, models, etc.)
+│   ├── OpenRouterFrontendClient.cs # Private frontend discovery client
+│   └── ...
+├── examples/                    # runnable demos
+├── README.md
+├── CLAUDE.md
+└── Codezerg.OpenRouter.sln
+```
+

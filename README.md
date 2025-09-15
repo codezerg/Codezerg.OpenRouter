@@ -1,178 +1,188 @@
 # Codezerg.OpenRouter
 
-A .NET client library for seamless integration with [OpenRouter](https://openrouter.ai)'s unified LLM API, providing access to multiple AI models through a single, consistent interface.
+A strongly‑typed **.NET Standard 2.0 client library** for [OpenRouter](https://openrouter.ai)’s unified LLM API.  
+Access multiple AI models (OpenAI, Anthropic, Google, Meta, Mistral, DeepSeek, etc.) through a single consistent interface.
 
-## Features
+---
 
-- **Unified API**: Access multiple LLM providers (OpenAI, Anthropic, Google, Meta, etc.) through a single client.
-- **Streaming Support**: Real-time token-by-token response streaming with `IAsyncEnumerable`.
-- **Multimodal Capabilities**: Build messages with text, images, and audio.
-- **Type-Safe Models**: Strongly-typed request/response models with IntelliSense support.
-- **.NET Standard 2.0**: Compatible with .NET Framework 4.6.1+, .NET Core 2.0+, and .NET 5.0+, 6.0, 7.0, 8.0.
-- **Flexible Configuration**: Customize timeouts, headers, and provider-specific options.
+## ✨ Features
 
-## Installation
+- **Unified API**: Chat completions across all supported LLM providers.
+- **Streaming Support**: Real‑time token streaming via `IAsyncEnumerable`.
+- **Multimodal**: Build conversations with text, image, and audio inputs.
+- **Tool Calling & Structured Outputs**: Define and resolve tool calls, enforce JSON/object schemas.
+- **Typed Models**: Strongly‑typed request/response models with IntelliSense.
+- **Account & Discovery APIs**: Usage, credits, models, providers, generation info.
+- **Frontend Client (Experimental)**: Undocumented OpenRouter frontend/private APIs.
+- **Cross‑Platform**: Runs on `.NET Framework 4.6.2+`, `.NET Core`, `.NET 5+`.
+
+---
+
+## 📦 Installation
 
 ```bash
 dotnet add package Codezerg.OpenRouter
 ```
 
-## Quick Start
+---
+
+## 🚀 Quick Start
 
 ```csharp
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
 
-// Load API key from environment
 var config = new OpenRouterClientOptions
 {
     ApiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY"),
     DefaultModel = "deepseek/deepseek-chat-v3.1:free",
-    UserAgent = "myapp/1.0",
-    Referer = "https://github.com/myuser/myapp"
+    UserAgent = "myapp/1.0",                  // required by OpenRouter
+    Referer = "https://github.com/myuser/app" // required by OpenRouter
 };
 
 using var client = new OpenRouterClient(config);
 
-// Build request
-var request = new ChatRequest
-{
-    Messages = new List<ChatMessage>
-    {
+var req = new ChatRequest {
+    Messages = new() {
         ChatMessage.System("You are a helpful assistant."),
         ChatMessage.User("What is the capital of France?")
     }
 };
 
-// Send request
-var response = await client.SendChatCompletionAsync(request);
+var resp = await client.SendChatCompletionAsync(req);
 
-// Read response
-Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+Console.WriteLine(resp.Choices[0].Message?.FirstTextContent);
 // => "The capital of France is Paris."
 ```
 
-## Streaming Example
+---
+
+## 📡 Streaming Responses
 
 ```csharp
-var request = new ChatRequest
-{
-    Messages = new List<ChatMessage>
-    {
-        ChatMessage.User("Tell me a short story about a robot learning to paint.")
-    },
-    MaxTokens = 200
+var req = new ChatRequest {
+    Messages = new() {
+        ChatMessage.User("Write a short poem about a sunrise.")
+    }
 };
 
-await foreach (var chunk in client.StreamChatCompletionAsync(request))
+await foreach (var chunk in client.StreamChatCompletionAsync(req))
 {
-    if (chunk.Choices?.Count > 0)
-    {
-        // ⚠️ NOTE: In streaming responses, content comes in Delta, not Message.
-        var content = chunk.Choices[0].Delta?.Content;
-        if (!string.IsNullOrEmpty(content))
-        {
-            Console.Write(content);
-        }
-    }
+    var token = chunk.Choices?[0].Delta?.Content;
+    if (!string.IsNullOrEmpty(token))
+        Console.Write(token);
 }
 ```
 
-> ⚠️ **Important:** In streaming mode, the generated text is delivered incrementally through  
-> `ChatChoice.Delta.Content`. In non-streaming requests, you access the full text via   
-> `ChatChoice.Message.FirstTextContent`.
+> ⚠️ In **streaming mode**, generated text arrives in   
+> `ChatChoice.Delta.Content`.  
+> In **non‑streaming mode**, use `ChatChoice.Message.FirstTextContent`.
 
-## Multimodal Example (Text + Image)
+---
+
+## 🖼 Multimodal Example
 
 ```csharp
 var message = new ChatMessage(ChatRole.User)
-    .AddText("What do you see in this image?")
+    .AddText("Describe this picture")
     .AddImage("https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg");
 
-var request = new ChatRequest
-{
-    Messages = new List<ChatMessage> { message }
-};
-
-var response = await client.SendChatCompletionAsync(request);
-Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+var resp = await client.SendChatCompletionAsync(new ChatRequest {
+    Messages = new() { message }
+});
+Console.WriteLine(resp.Choices[0].Message?.FirstTextContent);
 ```
 
-## Image Analysis Example (from `examples/`)
+---
+
+## 🔧 Tool Calling Example
 
 ```csharp
-var visionConfig = config.Clone();
-visionConfig.DefaultModel = "openai/gpt-5-mini";
-
-using var visionClient = new OpenRouterClient(visionConfig);
-
-var imageUrl = "https://images.unsplash.com/photo-1619507938536-39981994f4e9?w=800&auto=webp";
-
-var message = new ChatMessage(ChatRole.User)
-    .AddText("Please describe this image in detail.")
-    .AddImage(imageUrl);
-
-var request = new ChatRequest
-{
-    Messages = new List<ChatMessage> { message }
+var req = new ChatRequest {
+    Messages = new() { ChatMessage.User("What's the weather in Paris?") },
+    Tools = new() {
+        new ToolDefinition {
+            Function = new FunctionDescription {
+                Name = "get_weather",
+                Description = "Gets weather",
+                Parameters = JObject.Parse("{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}")
+            }
+        }
+    }
 };
 
-var response = await visionClient.SendChatCompletionAsync(request);
-Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+var resp = await client.SendChatCompletionAsync(req);
+
+if (resp.Choices[0].Message?.ToolCalls?.Count > 0) {
+    var call = resp.Choices[0].Message.ToolCalls[0];
+    Console.WriteLine($"{call.Function.Name}({call.Function.Arguments})");
+}
 ```
 
-## Configuration
+---
 
-Available options in `OpenRouterClientOptions`:
+## 📊 Account & Discovery APIs
 
 ```csharp
-var config = new OpenRouterClientOptions
-{
-    ApiKey = "your-api-key",
-    Endpoint = "https://openrouter.ai/api/v1",   // default
-    DefaultModel = "deepseek/deepseek-chat-v3.1:free",
-    Timeout = TimeSpan.FromSeconds(100),
-    UserAgent = "myapp/1.0",                     // required by OpenRouter
-    Referer = "https://myapp.com",               // required by OpenRouter
-    EnableDebugLogging = false
-};
+var credits = await client.GetCreditsAsync();
+Console.WriteLine($"Credits: {credits.TotalCredits}, Used: {credits.TotalUsage}");
+
+var activity = await client.GetActivityAsync();
+foreach (var day in activity)
+    Console.WriteLine($"{day.Date}: {day.Model} - {day.Requests} requests");
+
+var models = await client.GetModelsAsync();
+foreach (var m in models)
+    Console.WriteLine($"{m.Name} ({m.Id})");
 ```
 
-Fluent extension methods are available:
+---
+
+## ⚙️ Configuration
 
 ```csharp
-var cfg = new OpenRouterClientOptions()
+var config = new OpenRouterClientOptions()
     .WithApiKey("your-api-key")
     .WithDefaultModel("openai/gpt-4o-mini")
-    .WithUserAgent("my-app/1.0")
-    .WithReferer("https://yourapp.com");
+    .WithUserAgent("myapp/1.0")
+    .WithReferer("https://yourapp.com")
+    .WithTimeout(TimeSpan.FromSeconds(60));
 ```
 
-## Examples
+---
 
-Runnable demos are in the [`/examples`](./examples) folder:
+## 🧪 Examples
 
-- **Simple Chat**: Make a basic request/response.
-- **Streaming Chat**: Receive a response token-by-token (using `Delta.Content`).
-- **Multimodal Chat**: Combine text + images.
-- **Image Analysis**: Send real world photos to vision models.
-- **Image Generation**: Generate images from text prompts.
+Try runnable demos under [`/examples`](./examples):
 
-Run them with:
+- Simple Chat
+- Streaming Chat
+- Multimodal (Text + Images)
+- Image Analysis
+- Tool Calling
+- Structured JSON Output
+
+Run an example:
 
 ```bash
-export OPENROUTER_API_KEY=your-api-key
+export OPENROUTER_API_KEY="your-api-key"
 dotnet run --project examples/Codezerg.OpenRouter.Examples.csproj
 ```
 
-## Requirements
+---
 
-- .NET Standard 2.0+ (for library usage).
-- .NET 8+ (for the provided examples project).
-- An OpenRouter API key ([sign up here](https://openrouter.ai/keys)).
+## 📝 Requirements
 
-## License
-
-MIT License. See [LICENSE](LICENSE).
+- **Library**: .NET Standard 2.0+  
+- **Examples**: .NET 8+  
+- **API Key**: [Get from OpenRouter](https://openrouter.ai/keys)
 
 ---
+
+## ⚖️ License
+
+MIT License © [Codezerg](https://github.com/codezerg)
+
+---
+
+📌 **Tip**: Prefer **streaming mode** for interactive apps and incrementally process responses from `Delta`.
