@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		
 		<!-- NuGet Package Metadata -->
-		<PackageId>Codezerg.OpenRouterClient</PackageId>
+		<PackageId>Codezerg.OpenRouter</PackageId>
 		<Version>1.0.0</Version>
 		<Authors>Codezerg</Authors>
 		<Company>Codezerg</Company>
