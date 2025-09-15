@@ -1,0 +1,301 @@
+LIBRARY: Codezerg.OpenRouter
+LANGUAGE: C#
+TARGET_FRAMEWORK: netstandard2.0
+DESCRIPTION: A .NET client for interacting with the OpenRouter LLM API (chat completions, streaming, structured outputs, tool calls, multimodal data).
+
+============================================================
+NAMESPACE: Codezerg.OpenRouter
+------------------------------------------------------------
+CLASS: OpenRouterClient : IDisposable
+CONSTRUCTORS:
+- OpenRouterClient(OpenRouterClientOptions config)
+- OpenRouterClient(OpenRouterClientOptions config, HttpClient? client)
+PROPERTY:
+- OpenRouterClientOptions Configuration { get; }
+METHODS:
+- Task<ChatResponse> SendChatCompletionAsync(ChatRequest request, CancellationToken cancellationToken=default)
+- IAsyncEnumerable<ChatResponse> StreamChatCompletionAsync(ChatRequest request, CancellationToken cancellationToken=default)
+- void Dispose()
+
+BEHAVIOR:
+- Wraps the OpenRouter /chat/completions endpoint.
+- Non‑streaming: returns a complete deserialized ChatResponse.
+- Streaming: yields incremental ChatResponse chunks.
+- Sets required headers (Authorization Bearer ApiKey, User-Agent, HTTP-Referer, Accept=json).
+- Validates configuration.
+
+------------------------------------------------------------
+CLASS: OpenRouterClientOptions
+PROPERTIES:
+- string ApiKey
+- string Endpoint = "https://openrouter.ai/api/v1"
+- string DefaultModel = "deepseek/deepseek-chat-v3.1:free"
+- TimeSpan Timeout = 100s
+- string UserAgent
+- string Referer
+- bool EnableDebugLogging
+
+------------------------------------------------------------
+STATIC CLASS: OpenRouterClientOptionsExtensions
+METHODS:
+- void Validate(OpenRouterClientOptions) // requires ApiKey, Endpoint, DefaultModel not empty
+- OpenRouterClientOptions Clone(OpenRouterClientOptions)
+- WithApiKey(string)
+- WithEndpoint(string)
+- WithDefaultModel(string)
+- WithTimeout(TimeSpan)
+- WithUserAgent(string)
+- WithReferer(string)
+- WithEnableDebugLogging(bool)
+
+============================================================
+NAMESPACE: Codezerg.OpenRouter.Models
+------------------------------------------------------------
+CLASS: ChatMessage
+- Role: ChatRole
+- Content: List<MessagePart> (string OR array, uses MessageContentConverter).
+- Name: string?
+- ToolCalls: List<ToolCall>?
+- ToolCallId: string?
+- Images: List<GeneratedImage>?
+FACTORY METHODS:
+- User(string|MessagePart[])
+- Assistant(string|MessagePart[])
+- System(string|MessagePart[])
+- Tool(string content,string toolCallId)
+BUILDER METHODS:
+- WithName(string)
+- WithToolCalls(ToolCall[])
+- WithImages(GeneratedImage[])
+- AddText(string)
+- AddImage(string url,string? detail=null)
+- AddAudio(string base64,string format="wav")
+HELPERS (JsonIgnore):
+- FirstTextContent : string? (first text segment or null)
+- CombinedTextContent : string (all texts joined by space)
+- HasImages, HasAudio, IsMultimodal, IsToolResponse, HasToolCalls
+
+------------------------------------------------------------
+CLASS: ChatRequest
+PROPERTIES:
+- List<ChatMessage>? Messages
+- string? Prompt
+- string? Model
+- ResponseFormatOptions? ResponseFormat
+- object? Stop
+- bool? Stream
+- int? MaxTokens
+- double? Temperature
+- List<ToolDefinition>? Tools
+- object? ToolChoice
+- int? Seed
+- double? TopP
+- int? TopK
+- double? FrequencyPenalty
+- double? PresencePenalty
+- double? RepetitionPenalty
+- Dictionary<int,double>? LogitBias
+- bool? Logprobs
+- int? TopLogprobs
+- double? MinP
+- double? TopA
+- PredictionOptions? Prediction
+- List<string>? Transforms
+- List<string>? Models
+- string? Route
+- ProviderOptions? Provider
+- string? User
+- List<Modality>? Modalities
+- bool? ParallelToolCalls
+- VerbosityLevel? Verbosity
+
+------------------------------------------------------------
+CLASS: ChatResponse
+PROPERTIES:
+- string Id
+- List<ChatChoice> Choices
+- long Created
+- string Model
+- ObjectType Object
+- string? SystemFingerprint
+- TokenUsage? Usage
+- ApiError? Error
+
+CLASS: ChatChoice
+- int Index
+- CompletionFinishReason? FinishReason
+- CompletionFinishReason? NativeFinishReason
+- ApiError? Error
+- ChatMessage? Message
+- ChatDelta? Delta
+- string? Text
+
+CLASS: ChatDelta
+- string? Content
+- ChatRole? Role
+- List<ToolCall>? ToolCalls
+- List<GeneratedImage>? Images
+
+CLASS: TokenUsage
+- int PromptTokens
+- int CompletionTokens
+- int TotalTokens
+- int? CacheCreationInputTokens
+- int? CacheReadInputTokens
+
+------------------------------------------------------------
+CLASS: ApiError
+- int Code
+- string Message
+- Dictionary<string,object>? Metadata
+CLASS: ModerationErrorDetails
+- List<string> Reasons
+- string FlaggedInput
+- string ProviderName
+- string ModelSlug
+CLASS: ProviderErrorDetails
+- string ProviderName
+- object? Raw
+
+------------------------------------------------------------
+CLASS: MessagePart
+- Type: MessageContentType
+- Text: string?
+- ImageUrl: ImageReference?
+- InputAudio: AudioContent?
+FACTORIES:
+- CreateText(string)
+- CreateImage(string url,string? detail=null)
+- CreateAudio(string base64,string format="wav")
+HELPERS:
+- IsText, IsImage, IsAudio
+CLASS: ImageReference { string Url, string? Detail }
+CLASS: AudioContent { string Data, string Format="wav" }
+
+------------------------------------------------------------
+CLASS: GeneratedImage { string Type="image_url"; GeneratedImageReference ImageUrl }
+CLASS: GeneratedImageReference { string Url }
+
+------------------------------------------------------------
+CLASS: ToolDefinition { ToolType Type=Function; FunctionDescription Function }
+CLASS: FunctionDescription { string Name; string? Description; JObject? Parameters }
+CLASS: ToolCall { string Id; ToolType Type; FunctionCall Function }
+CLASS: FunctionCall { string Name; string Arguments }
+CLASS: ToolChoice { ToolType Type; ToolChoiceDetails Function }
+CLASS: ToolChoiceDetails { string Name }
+
+------------------------------------------------------------
+CLASS: ProviderOptions
+- bool? AllowFallbacks
+- bool? RequireParameters
+- DataCollectionOption? DataCollection
+- List<string>? Order
+- List<string>? Ignore
+- List<string>? Allow
+- List<string>? Block
+
+CLASS: ResponseFormatOptions { ResponseFormatType Type=JsonObject; object? JsonSchema }
+CLASS: PredictionOptions { PredictionType Type=Content; string Content }
+
+------------------------------------------------------------
+ENUM-LIKE RECORDS (struct wrappers with converters)
+- ChatRole ("system","user","assistant","tool")
+- CompletionFinishReason ("stop","length","tool_calls","content_filter","error")
+- MessageContentType ("text","image_url","input_audio")
+- Modality ("text","image","audio")
+- ResponseFormatType ("json_object","json_schema","content")
+- ToolType ("function")
+- DataCollectionOption ("allow","deny")
+- PredictionType ("content")
+- VerbosityLevel ("low","medium","high")
+
+============================================================
+USAGE EXAMPLES (C#)
+
+TEXT COMPLETION
+------------------------------------------------------------
+var request = new ChatRequest
+{
+    Messages = new()
+    {
+        ChatMessage.System("You are a helpful assistant."),
+        ChatMessage.User("What is the capital of France?")
+    }
+};
+var response = await client.SendChatCompletionAsync(request);
+Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+
+STREAMING
+------------------------------------------------------------
+await foreach (var chunk in client.StreamChatCompletionAsync(request))
+{
+    var content = chunk.Choices?[0].Delta?.Content;
+    if (!string.IsNullOrEmpty(content))
+        Console.Write(content);
+}
+
+MULTIMODAL (TEXT + IMAGE)
+------------------------------------------------------------
+var message = new ChatMessage(ChatRole.User)
+    .AddText("What do you see?")
+    .AddImage("https://example.com/picture.jpg");
+var request = new ChatRequest { Messages = new() { message } };
+var response = await client.SendChatCompletionAsync(request);
+Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+
+AUDIO INPUT
+------------------------------------------------------------
+var audioMessage = new ChatMessage(ChatRole.User)
+    .AddAudio(Convert.ToBase64String(File.ReadAllBytes("speech.wav")));
+var request = new ChatRequest { Messages = new() { audioMessage } };
+var response = await client.SendChatCompletionAsync(request);
+Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+
+TOOL CALLING
+------------------------------------------------------------
+var request = new ChatRequest
+{
+    Messages = new() { ChatMessage.User("What's the weather in Paris?") },
+    Tools = new()
+    {
+        new ToolDefinition
+        {
+            Function = new FunctionDescription
+            {
+                Name="get_weather",
+                Description="Gets weather",
+                Parameters=JObject.Parse("{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}")
+            }
+        }
+    }
+};
+var resp = await client.SendChatCompletionAsync(request);
+if (resp.Choices[0].Message?.ToolCalls?.Count>0)
+{
+    var call=resp.Choices[0].Message.ToolCalls[0];
+    Console.WriteLine($"{call.Function.Name}({call.Function.Arguments})");
+}
+
+STRUCTURED OUTPUT (JSON SCHEMA)
+------------------------------------------------------------
+var request = new ChatRequest
+{
+    Messages = new(){ChatMessage.User("Generate name and age")},
+    ResponseFormat = new ResponseFormatOptions
+    {
+        Type = ResponseFormatType.JsonSchema,
+        JsonSchema = new { type="object", properties=new{ name=new{type="string"}, age=new{type="integer"} } }
+    }
+};
+var response = await client.SendChatCompletionAsync(request);
+Console.WriteLine(response.Choices[0].Message?.FirstTextContent);
+
+============================================================
+BEST PRACTICES
+- Always set ApiKey, UserAgent, Referer in OpenRouterClientOptions.
+- If Model not set → uses DefaultModel.
+- Use builders (ChatMessage.User/AddText/AddImage/AddAudio) to avoid invalid content.
+- Prefer streaming for interactive apps.
+- Handle ToolCalls before proceeding.
+- Use ResponseFormat for structured JSON outputs.
+- Clone configuration for multiple clients with different models.
