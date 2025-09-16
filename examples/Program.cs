@@ -63,7 +63,8 @@ class Program
             //("Model Explorer", "Explore and compare models using frontend API", ModelExplorerExample.RunAsync),
             //("Frontend API Demo", "Full frontend API demonstration", async (cfg) => await FrontendApiExample.RunAsync()),
             //("API Endpoints Demo", "Demonstrate various OpenRouter API endpoints", async (cfg) => await ApiEndpointsExample.RunAsync()),
-            ("Cost calculation Demo", "Demonstrating cost calculation for OpenRouter API usage", async (cfg) => await CostCalculationExample.RunAsync()),
+            //("Cost calculation Demo", "Demonstrating cost calculation for OpenRouter API usage", async (cfg) => await CostCalculationExample.RunAsync()),
+            ("Tool Use", "Demonstrate function calling with tools", async (cfg) => await ToolUseExample.RunAsync()),
         };
 
         Console.WriteLine("\n========================================");

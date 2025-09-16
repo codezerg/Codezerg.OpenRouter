@@ -90,6 +90,12 @@ public class ChatMessage
         return this;
     }
 
+    public ChatMessage WithToolCallId(string toolCallId)
+    {
+        ToolCallId = toolCallId;
+        return this;
+    }
+
     public ChatMessage AddText(string text)
     {
         Content.Add(MessagePart.CreateText(text));
