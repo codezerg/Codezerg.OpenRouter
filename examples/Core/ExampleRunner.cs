@@ -65,13 +65,20 @@ namespace Codezerg.OpenRouter.Examples.Core
                 for (int i = 0; i < _examples.Count; i++)
                 {
                     var example = _examples[i];
-                    Console.WriteLine($"  [{i + 1:D2}] {example.Attribute.Name}");
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write($"  {i + 1}) ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine($"{example.Attribute.Name}");
                     Console.WriteLine($"       {example.Attribute.Description}");
                     Console.WriteLine();
                 }
 
-                Console.WriteLine("  [0] Exit");
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write($"  0) ");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine("Exit");
                 Console.WriteLine();
+                Console.ResetColor();
 
                 var input = ConsoleHelper.Prompt("Enter your choice");
 
