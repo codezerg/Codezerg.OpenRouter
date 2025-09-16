@@ -3,10 +3,10 @@
 A strongly‑typed **.NET Standard 2.0 client library** for [OpenRouter](https://openrouter.ai)’s unified LLM API.  
 Access multiple AI models (OpenAI, Anthropic, Google, Meta, Mistral, DeepSeek, etc.) through a single consistent interface.
 
-[![NuGet Version](https://img.shields.io/nuget/v/Codezerg.OpenRouter?style=flat-square)](https://www.nuget.org/packages/Codezerg.OpenRouter/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/Codezerg.OpenRouter?style=flat-square)](https://www.nuget.org/packages/Codezerg.OpenRouter/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Target Framework](https://img.shields.io/badge/.NET-Standard%202.0-blue?style=flat-square)](https://dotnet.microsoft.com/platform/dotnet-standard)
+[![NuGet Version](https://img.shields.io/nuget/v/Codezerg.OpenRouter)](https://www.nuget.org/packages/Codezerg.OpenRouter/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Codezerg.OpenRouter)](https://www.nuget.org/packages/Codezerg.OpenRouter/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Target Framework](https://img.shields.io/badge/.NET-Standard%202.0-blue)](https://dotnet.microsoft.com/platform/dotnet-standard)
 
 ---
 
