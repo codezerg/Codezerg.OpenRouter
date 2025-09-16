@@ -143,7 +143,7 @@ foreach (var m in models)
 ```csharp
 var config = new OpenRouterClientOptions()
     .WithApiKey("your-api-key")
-    .WithDefaultModel("openai/gpt-4o-mini")
+    .WithDefaultModel("meta-llama/llama-3.2-3b-instruct:free")
     .WithUserAgent("myapp/1.0")
     .WithReferer("https://yourapp.com")
     .WithTimeout(TimeSpan.FromSeconds(60));

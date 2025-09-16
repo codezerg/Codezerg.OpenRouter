@@ -13,6 +13,7 @@ namespace Codezerg.OpenRouter.Examples.Core
         public static OpenRouterClientOptions CreateDefaultConfig()
         {
             var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
+
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new InvalidOperationException(
                     "OPENROUTER_API_KEY environment variable is not set. " +
@@ -21,7 +22,7 @@ namespace Codezerg.OpenRouter.Examples.Core
             return new OpenRouterClientOptions
             {
                 ApiKey = apiKey,
-                DefaultModel = "deepseek/deepseek-chat-v3:free",
+                DefaultModel = "deepseek/deepseek-chat-v3.1:free",
                 UserAgent = "Codezerg.OpenRouter.Examples/1.0",
                 Referer = "https://github.com/codezerg/Codezerg.OpenRouter"
             };

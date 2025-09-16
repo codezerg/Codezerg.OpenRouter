@@ -107,6 +107,7 @@ Extensions add `.WithApiKey(...)`, `.WithDefaultModel(...)`, `.Validate()`, `.Cl
 ### Standard Chat
 ```csharp
 var req = new ChatRequest {
+    Model = "meta-llama/llama-3.2-3b-instruct:free", // or any available model
     Messages = new() {
         ChatMessage.System("You are a helpful assistant."),
         ChatMessage.User("What is the capital of France?")
