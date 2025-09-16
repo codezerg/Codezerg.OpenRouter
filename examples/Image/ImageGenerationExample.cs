@@ -1,16 +1,18 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
+using Codezerg.OpenRouter.Examples.Core;
 
-namespace Codezerg.OpenRouter.Examples.Image;
-
-[Example("Image Generation", "Generate images using AI models")]
-public class ImageGenerationExample
+namespace Codezerg.OpenRouter.Examples.Image
 {
-    public static async Task RunAsync(OpenRouterClientOptions config)
+    [Example("Image Generation", "Generate images using AI models")]
+    public class ImageGenerationExample : IExample
+{
+        public async Task RunAsync(OpenRouterClientOptions config)
     {
         Console.WriteLine("\n=== Image Generation Example ===\n");
 
@@ -141,5 +143,6 @@ public class ImageGenerationExample
                 Console.WriteLine("  - google/gemini-2.5-flash-image-preview");
             }
         }
+    }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Codezerg.OpenRouter.Examples;
+namespace Codezerg.OpenRouter.Examples.Core;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class ExampleAttribute : Attribute

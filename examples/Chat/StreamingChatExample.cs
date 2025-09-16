@@ -1,16 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
+using Codezerg.OpenRouter.Examples.Core;
 
-namespace Codezerg.OpenRouter.Examples.Chat;
-
-[Example("Streaming Chat", "Chat completion with streaming response")]
-public class StreamingChatExample
+namespace Codezerg.OpenRouter.Examples.Chat
 {
-    public static async Task RunAsync(OpenRouterClientOptions config)
+    [Example("Streaming Chat", "Chat completion with streaming response")]
+    public class StreamingChatExample : IExample
+{
+        public async Task RunAsync(OpenRouterClientOptions config)
     {
-        Console.WriteLine("\n=== Streaming Chat Example ===\n");
+        ConsoleHelper.Section("Executing Streaming Chat");
 
         // Create client with provided configuration
         using var client = new OpenRouterClient(config);
@@ -28,28 +30,22 @@ public class StreamingChatExample
 
         try
         {
-            Console.WriteLine("Streaming response from OpenRouter...\n");
-            Console.Write("Assistant: ");
+            ConsoleHelper.Info("Streaming response from OpenRouter...");
+            Console.Write("\nAssistant: ");
 
             // Stream the response
             await foreach (var chunk in client.StreamChatCompletionAsync(request))
             {
-                if (chunk.Choices?.Count > 0)
-                {
-                    var choice = chunk.Choices[0];
-                    var content = choice?.Delta?.Content;
-                    if (!string.IsNullOrEmpty(content))
-                    {
-                        Console.Write(content);
-                    }
-                }
+                ResponsePrinter.PrintStreamToken(chunk);
             }
 
-            Console.WriteLine("\n\n[Streaming completed]");
+            Console.WriteLine();
+            ConsoleHelper.Success("Streaming completed");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"\nError: {ex.Message}");
+            ConsoleHelper.Error($"Streaming failed: {ex.Message}");
         }
+    }
     }
 }

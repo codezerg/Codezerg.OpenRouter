@@ -1,16 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
+using Codezerg.OpenRouter.Examples.Core;
 
-namespace Codezerg.OpenRouter.Examples.Chat;
-
-[Example("Simple Chat", "Basic chat completion example")]
-public class SimpleChatExample
+namespace Codezerg.OpenRouter.Examples.Chat
 {
-    public static async Task RunAsync(OpenRouterClientOptions config)
+    [Example("Simple Chat", "Basic chat completion example")]
+    public class SimpleChatExample : IExample
+{
+        public async Task RunAsync(OpenRouterClientOptions config)
     {
-        Console.WriteLine("\n=== Simple Chat Example ===\n");
+        ConsoleHelper.Section("Executing Simple Chat");
 
         // Create client with provided configuration
         using var client = new OpenRouterClient(config);
@@ -27,34 +29,19 @@ public class SimpleChatExample
 
         try
         {
-            Console.WriteLine("Sending request to OpenRouter...");
+            ConsoleHelper.Info("Sending request to OpenRouter...");
             
             // Send the request
             var response = await client.SendChatCompletionAsync(request);
 
             // Display the response
-            if (response.Choices?.Count > 0)
-            {
-                var message = response.Choices[0];
-                Console.WriteLine($"\nAssistant: {message?.Message?.FirstTextContent}");
-            }
-            else
-            {
-                Console.WriteLine("No response received.");
-            }
-
-            // Display usage information
-            if (response.Usage != null)
-            {
-                Console.WriteLine($"\nTokens used:");
-                Console.WriteLine($"  Prompt: {response.Usage.PromptTokens}");
-                Console.WriteLine($"  Completion: {response.Usage.CompletionTokens}");
-                Console.WriteLine($"  Total: {response.Usage.TotalTokens}");
-            }
+            Console.WriteLine("\nAssistant:");
+            ResponsePrinter.PrintChatResponse(response);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            ConsoleHelper.Error($"Chat failed: {ex.Message}");
         }
+    }
     }
 }

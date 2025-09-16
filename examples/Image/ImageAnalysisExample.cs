@@ -1,15 +1,17 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
+using Codezerg.OpenRouter.Examples.Core;
 
-namespace Codezerg.OpenRouter.Examples.Image;
-
-[Example("Image Analysis", "Analyze local or remote images")]
-public class ImageAnalysisExample
+namespace Codezerg.OpenRouter.Examples.Image
 {
-    public static async Task RunAsync(OpenRouterClientOptions config)
+    [Example("Image Analysis", "Analyze local or remote images")]
+    public class ImageAnalysisExample : IExample
+{
+        public async Task RunAsync(OpenRouterClientOptions config)
     {
         Console.WriteLine("\n=== Image Analysis Example ===\n");
 
@@ -74,5 +76,6 @@ public class ImageAnalysisExample
                 Console.WriteLine("\nNote: Make sure you're using a vision-capable model");
             }
         }
+    }
     }
 }

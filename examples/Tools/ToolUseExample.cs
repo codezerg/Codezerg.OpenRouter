@@ -4,32 +4,27 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
+using Codezerg.OpenRouter.Examples.Core;
 using Newtonsoft.Json.Linq;
 
-namespace Codezerg.OpenRouter.Examples
+namespace Codezerg.OpenRouter.Examples.Tools
 {
-    public class ToolUseExample
+    [Example("Tool Use", "Demonstrate function calling with tools")]
+    public class ToolUseExample : IExample
     {
-        public static async Task RunAsync()
+        public async Task RunAsync(OpenRouterClientOptions config)
         {
-            var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                Console.WriteLine("Please set OPENROUTER_API_KEY environment variable");
-                return;
-            }
+            // Use GPT-4 mini for tool use
+            var toolConfig = config.Clone();
+            toolConfig.DefaultModel = "openai/gpt-4o-mini";
 
-            var client = new OpenRouterClient(new OpenRouterClientOptions
-            {
-                ApiKey = apiKey,
-                DefaultModel = "openai/gpt-4o-mini"
-            });
+            var client = new OpenRouterClient(toolConfig);
 
-            await Console.Out.WriteLineAsync("=== Tool Use Example ===\n");
+            ConsoleHelper.Section("Tool Use Examples");
             await DemoWeatherToolAsync(client);
-            await Console.Out.WriteLineAsync("\n=== Calculator Tool Example ===\n");
+            ConsoleHelper.Section("Calculator Tool Example");
             await DemoCalculatorToolAsync(client);
-            await Console.Out.WriteLineAsync("\n=== Multiple Tools Example ===\n");
+            ConsoleHelper.Section("Multiple Tools Example");
             await DemoMultipleToolsAsync(client);
         }
 

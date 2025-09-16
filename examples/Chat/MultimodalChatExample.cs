@@ -1,15 +1,17 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Codezerg.OpenRouter;
 using Codezerg.OpenRouter.Models;
+using Codezerg.OpenRouter.Examples.Core;
 
-namespace Codezerg.OpenRouter.Examples.Chat;
-
-[Example("Multimodal Chat", "Chat with images")]
-public class MultimodalChatExample
+namespace Codezerg.OpenRouter.Examples.Chat
 {
-    public static async Task RunAsync(OpenRouterClientOptions config)
+    [Example("Multimodal Chat", "Chat with images")]
+    public class MultimodalChatExample : IExample
+{
+        public async Task RunAsync(OpenRouterClientOptions config)
     {
         Console.WriteLine("\n=== Multimodal Chat Example ===\n");
 
@@ -52,5 +54,6 @@ public class MultimodalChatExample
         {
             Console.WriteLine($"Error: {ex.Message}");
         }
+    }
     }
 }

@@ -1,100 +1,92 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
-using Codezerg.OpenRouter;
-using Codezerg.OpenRouter.Models;
-using Codezerg.OpenRouter.Examples.Chat;
-using Codezerg.OpenRouter.Examples.Frontend;
-using Codezerg.OpenRouter.Examples.Image;
+using Codezerg.OpenRouter.Examples.Core;
+using Codezerg.OpenRouter.Examples.Debug;
 
-namespace Codezerg.OpenRouter.Examples;
-
-class Program
+namespace Codezerg.OpenRouter.Examples
 {
-    static async Task Main(string[] args)
+    class Program
     {
-        Console.WriteLine("========================================");
-        Console.WriteLine("      Codezerg.OpenRouter Examples");
-        Console.WriteLine("========================================");
-
-        // Check for API key - first try user variable, then system variable
-        var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY", EnvironmentVariableTarget.User) 
-                     ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY", EnvironmentVariableTarget.Machine)
-                     ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY", EnvironmentVariableTarget.Process);
-        
-        if (string.IsNullOrEmpty(apiKey))
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("\nWARNING: OPENROUTER_API_KEY environment variable is not set!");
-            Console.WriteLine("Please set it to run the examples:");
-            Console.WriteLine("  Windows (User): setx OPENROUTER_API_KEY \"your-api-key-here\"");
-            Console.WriteLine("  Windows (System): setx OPENROUTER_API_KEY \"your-api-key-here\" /M");
-            Console.WriteLine("  Linux/Mac: export OPENROUTER_API_KEY=your-api-key-here");
-            Console.WriteLine("\nGet your API key from: https://openrouter.ai/keys");
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
-            return;
-        }
-        
-        Console.WriteLine("✓ API key found");
+            // Parse command line arguments
+            var verboseMode = args.Contains("--verbose") || args.Contains("-v");
+            var stepMode = args.Contains("--step") || args.Contains("-s");
+            var listMode = args.Contains("--list") || args.Contains("-l");
+            var helpMode = args.Contains("--help") || args.Contains("-h");
+            var specificExample = args.FirstOrDefault(a => !a.StartsWith("-"));
 
-        // Create shared configuration
-        var config = new OpenRouterClientOptions
-        {
-            ApiKey = apiKey,
-            DefaultModel = "deepseek/deepseek-chat-v3:free",
-            UserAgent = "Codezerg.OpenRouter.Examples/1.0",
-            Referer = "https://github.com/codezerg/Codezerg.OpenRouter"
-        };
+            if (helpMode)
+            {
+                ShowHelp();
+                return;
+            }
 
-        await RunExamplesMenu(config);
-    }
+            // Validate API key
+            if (!ErrorHandler.ValidateApiKey())
+            {
+                return;
+            }
 
-    static async Task RunExamplesMenu(OpenRouterClientOptions config)
-    {
-        var examples = new List<(string Name, string Description, Func<OpenRouterClientOptions, Task> Run)>
-        {
-            //("Simple Chat", "Basic chat completion example", SimpleChatExample.RunAsync),
-            //("Streaming Chat", "Chat with streaming response", StreamingChatExample.RunAsync),
-            //("Multimodal Chat", "Chat with images", MultimodalChatExample.RunAsync),
-            //("Image Analysis", "Analyze local or remote images", ImageAnalysisExample.RunAsync),
-            //("Image Generation", "Generate images using AI", ImageGenerationExample.RunAsync),
-            //("Model Explorer", "Explore and compare models using frontend API", ModelExplorerExample.RunAsync),
-            //("Frontend API Demo", "Full frontend API demonstration", async (cfg) => await FrontendApiExample.RunAsync()),
-            //("API Endpoints Demo", "Demonstrate various OpenRouter API endpoints", async (cfg) => await ApiEndpointsExample.RunAsync()),
-            //("Cost calculation Demo", "Demonstrating cost calculation for OpenRouter API usage", async (cfg) => await CostCalculationExample.RunAsync()),
-            ("Tool Use", "Demonstrate function calling with tools", async (cfg) => await ToolUseExample.RunAsync()),
-        };
-
-        Console.WriteLine("\n========================================");
-        Console.WriteLine("Running All Examples");
-        Console.WriteLine("========================================\n");
-
-        for (int i = 0; i < examples.Count; i++)
-        {
-            Console.WriteLine($"\n[{i + 1}/{examples.Count}] Running: {examples[i].Name}");
-            Console.WriteLine($"Description: {examples[i].Description}");
-            Console.WriteLine("----------------------------------------");
-            
             try
             {
-                await examples[i].Run(config);
+                // Create configuration
+                var config = OpenRouterFactory.CreateDefaultConfig();
+
+                if (verboseMode)
+                {
+                    config.EnableDebugLogging = true;
+                }
+
+                // Create and run the example runner
+                var runner = new ExampleRunner(config, verboseMode, stepMode);
+
+                if (listMode)
+                {
+                    runner.ListExamples();
+                }
+                else if (!string.IsNullOrEmpty(specificExample))
+                {
+                    await runner.RunByName(specificExample);
+                }
+                else
+                {
+                    await runner.RunInteractiveMenu();
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\nExample failed with error: {ex.Message}");
-            }
-            
-            if (i < examples.Count - 1)
-            {
-                Console.WriteLine("\n========================================");
-                await Task.Delay(1000); // Brief pause between examples
+                ConsoleHelper.Error($"Fatal error: {ex.Message}");
+                if (verboseMode)
+                {
+                    Console.WriteLine(ex.StackTrace);
+                }
             }
         }
 
-        Console.WriteLine("\n========================================");
-        Console.WriteLine("All examples completed!");
-        Console.WriteLine("========================================");
+        static void ShowHelp()
+        {
+            ConsoleHelper.Header("Codezerg.OpenRouter Examples");
+
+            Console.WriteLine("Usage: dotnet run [options] [example-name]");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            Console.WriteLine("  --help, -h      Show this help message");
+            Console.WriteLine("  --list, -l      List all available examples");
+            Console.WriteLine("  --verbose, -v   Enable verbose mode (show raw requests/responses)");
+            Console.WriteLine("  --step, -s      Enable step mode (pause between operations)");
+            Console.WriteLine();
+            Console.WriteLine("Examples:");
+            Console.WriteLine("  dotnet run                    Run interactive menu");
+            Console.WriteLine("  dotnet run \"Simple Chat\"      Run specific example by name");
+            Console.WriteLine("  dotnet run --list             List all examples");
+            Console.WriteLine("  dotnet run -v -s              Run menu with verbose and step modes");
+            Console.WriteLine();
+            Console.WriteLine("Environment:");
+            Console.WriteLine("  OPENROUTER_API_KEY    Your OpenRouter API key (required)");
+            Console.WriteLine();
+            Console.WriteLine("Get your API key at: https://openrouter.ai/keys");
+        }
     }
 }
