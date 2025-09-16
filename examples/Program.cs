@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Codezerg.OpenRouter.Examples.Core;
-using Codezerg.OpenRouter.Examples.Debug;
 
 namespace Codezerg.OpenRouter.Examples
 {
